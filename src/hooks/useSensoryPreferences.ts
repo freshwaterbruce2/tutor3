@@ -1,0 +1,26 @@
+import { useEffect, useState, useTransition } from 'react';
+import { logger } from '../utils/logger';
+import { loadSensoryPreferences } from '../services/sensoryPreferences';
+
+interface SensoryPreferences {
+  animationEnabled: boolean;
+}
+
+/** Loads sensory preferences from dataStore and exposes whether animations are enabled. */
+export function useSensoryPreferences(): SensoryPreferences {
+  const [animationEnabled, setAnimationEnabled] = useState(true);
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    startTransition(async () => {
+      try {
+        const prefs = await loadSensoryPreferences();
+        setAnimationEnabled(prefs.animationSpeed !== 'none');
+      } catch (error) {
+        logger.error('Could not load sensory preferences:', error);
+      }
+    });
+  }, []);
+
+  return { animationEnabled };
+}

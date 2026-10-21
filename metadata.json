@@ -1,0 +1,10 @@
+{
+  "name": "Vibe Tutor Studio",
+  "description": "Friendly study organizer, Socratic homework coach, focus timer, learning quests, and brain gym for teens 13–17.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

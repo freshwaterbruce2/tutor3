@@ -1,0 +1,38 @@
+interface Window {
+  // Custom Vibe Tutor globals
+  __API_URL__?: string;
+
+  // Experimental Web Speech API
+  SpeechRecognition: typeof SpeechRecognition;
+  webkitSpeechRecognition: typeof SpeechRecognition;
+  // Single source of truth lives in electron.d.ts; keep this an alias so the
+  // two Window augmentations cannot drift apart.
+  electronAPI: import('./electron').ElectronAPI;
+}
+
+// Minimal SpeechRecognition definitions if not available in lib.dom.d.ts
+// We use 'declare var' or class interface merging to ensure it exists globally
+declare class SpeechRecognition extends EventTarget {
+  constructor();
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+  interpretation: unknown;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}

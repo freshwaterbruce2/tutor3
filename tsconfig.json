@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "types": ["vite/client", "node"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@vibetech/avatars": ["./packages/avatars/src/index.ts"],
+      "@vibetech/avatars/*": ["./packages/avatars/src/*"],
+      "@vibetech/games": ["./packages/games/src/index.ts"],
+      "@vibetech/games/tutor": ["./packages/games/src/tutor/index.ts"],
+      "@vibetech/games/*": ["./packages/games/src/*/index.ts"]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*", "packages/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

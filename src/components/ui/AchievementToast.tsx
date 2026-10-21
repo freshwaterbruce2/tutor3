@@ -1,0 +1,173 @@
+import { Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { Achievement } from '../../types';
+import { FlameIcon } from './icons/FlameIcon';
+
+interface AchievementToastProps {
+  achievement: Achievement | null;
+  bonusTokens: number;
+  onClose: () => void;
+}
+
+interface ConfettiPiece {
+  id: number;
+  left: string;
+  animationDelay: string;
+  backgroundColor: string;
+}
+
+const AchievementToast = ({ achievement, bonusTokens, onClose }: AchievementToastProps) => {
+  const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const Icon = achievement?.icon ?? (achievement && ['STREAK_MASTER', 'FOCUS_MARATHON', 'DAILY_FOCUS'].includes(achievement.id) ? FlameIcon : Trophy);
+
+  useEffect(() => {
+    if (!achievement) {
+      return;
+    }
+
+    // Generate confetti only on client side after mount
+    const pieces = Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 0.5}s`,
+      backgroundColor: ['#fbbf24', '#a855f7', '#F97316', '#22d3ee'][Math.floor(Math.random() * 4)]!,
+    }));
+    const confettiTimer = setTimeout(() => {
+      setConfetti(pieces);
+    }, 0);
+
+    const timer = setTimeout(onClose, 4000);
+    return () => {
+      clearTimeout(confettiTimer);
+      clearTimeout(timer);
+    };
+  }, [achievement, onClose]);
+
+  if (!achievement) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed right-4 z-[65] animate-slide-in"
+      style={{ top: 'max(env(safe-area-inset-top, 0px), 1rem)' }}
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+    >
+      <div className="glass-card p-4 border-2 border-[var(--token-color)]/50 bg-gradient-to-r from-[var(--token-color)]/20 to-[var(--primary-accent)]/20 shadow-[0_0_20px_rgba(168,85,247,0.3)] relative overflow-hidden">
+        {/* Confetti Effect */}
+        <div className="absolute inset-0 pointer-events-none">
+          {confetti.map((piece) => (
+            <div
+              key={piece.id}
+              className="confetti"
+              style={{
+                left: piece.left,
+                animationDelay: piece.animationDelay,
+                backgroundColor: piece.backgroundColor,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          aria-label="Close achievement notification"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-4">
+          {/* Achievement Icon */}
+          <div className="w-16 h-16 rounded-full bg-[var(--token-color)]/30 flex items-center justify-center flex-shrink-0 animate-bounce-slow">
+            <Icon className="w-10 h-10 text-[var(--background-main)]" aria-hidden="true" />
+          </div>
+
+          {/* Achievement Info */}
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-[var(--text-primary)] mb-1">Achievement Unlocked!</div>
+            <div className="text-xl font-bold text-[var(--text-primary)]">{achievement.name}</div>
+            <div className="text-sm text-[var(--text-secondary)] mt-1">{achievement.description}</div>
+            {bonusTokens > 0 && (
+              <div className="text-lg font-bold text-[var(--token-color)] mt-2 flex items-center gap-1">
+                <span>+{bonusTokens}</span>
+                <span className="text-sm">tokens</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slide-down {
+          0% {
+            transform: translate(-50%, -100px);
+            opacity: 0;
+          }
+          100% {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes bounce-slow {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(300px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+
+        .animate-slide-down {
+          animation: slide-down 0.5s ease-out forwards;
+        }
+
+        .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
+        }
+
+        .confetti-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+        }
+
+        .confetti {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          top: -10px;
+          animation: confetti-fall 3s linear forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default AchievementToast;

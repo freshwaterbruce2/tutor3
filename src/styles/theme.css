@@ -1,0 +1,196 @@
+:root {
+  /* VibeTutor 2.0 — Calm, Respectful Daylight Palette */
+  --background-main: #F7F6F2;
+  --background-card: #FFFFFF;
+  --background-surface: #EAF6F0;
+  --background-lavender: #EFEAFA;
+  --background: var(--background-main);
+  --glass-surface: rgba(255, 255, 255, 0.96);
+  --glass-border: #E2E0D8;
+  --glass-blur: 12px;
+
+  /* Brand & Semantic Accents */
+  --primary-accent: #0F766E; /* Deep Teal Primary Actions */
+  --primary-hover: #115E59;
+  --secondary-accent: #D97706; /* Warm Amber */
+  --tertiary-accent: #6D28D9; /* Calm Lavender-Indigo Text Accent */
+  --quaternary-accent: #0284C7; /* Clear Sky */
+  --success-accent: #15803D;
+  --warning-accent: #B45309;
+  --error-accent: #B91C1C;
+  --error-surface: rgba(185, 28, 28, 0.08);
+  --warning-surface: rgba(180, 83, 9, 0.08);
+  --success-surface: #EAF6F0;
+  --token-color: #B45309;
+
+  /* Typography Hierarchy */
+  --text-primary: #1F2937; /* Dark Slate Text */
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --text-placeholder: #9CA3AF;
+
+  /* Borders & Restrained Shadows */
+  --border-color: #E2E0D8;
+  --border-subtle: #ECEAE2;
+  --border-hover: #0F766E;
+  --shadow-card: 0 2px 8px -2px rgba(31, 41, 55, 0.05), 0 1px 3px -1px rgba(31, 41, 55, 0.04);
+  --shadow-elevated: 0 10px 24px -6px rgba(31, 41, 55, 0.08), 0 4px 10px -2px rgba(31, 41, 55, 0.04);
+
+  /* Fonts */
+  --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'DM Sans', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Optional Evening Slate Mode */
+[data-theme='dark'] {
+  --background-main: #182026;
+  --background-card: #212B34;
+  --background-surface: #283540;
+  --background-lavender: #2C2840;
+  --glass-surface: rgba(33, 43, 52, 0.94);
+  --glass-border: #364552;
+  --primary-accent: #14B8A6;
+  --primary-hover: #0D9488;
+  --secondary-accent: #F59E0B;
+  --tertiary-accent: #A78BFA;
+  --text-primary: #F3F4F6;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --text-placeholder: #6B7280;
+  --border-color: #364552;
+  --border-subtle: #2D3A45;
+  --border-hover: #14B8A6;
+}
+
+/* Sensory Color Modes */
+[data-color-mode='high-contrast'] {
+  --background-main: #FFFFFF;
+  --background-card: #FFFFFF;
+  --background-surface: #F3F4F6;
+  --background-lavender: #F3E8FF;
+  --glass-surface: #FFFFFF;
+  --glass-border: #1F2937;
+  --primary-accent: #0F766E;
+  --secondary-accent: #B45309;
+  --text-primary: #000000;
+  --text-secondary: #1F2937;
+  --text-muted: #374151;
+  --border-color: #1F2937;
+}
+
+[data-color-mode='warm'] {
+  --background-main: #FDF8F3;
+  --background-card: #FFFFFF;
+  --background-surface: #F9EFE6;
+  --background-lavender: #F5EBF7;
+  --primary-accent: #C2410C;
+  --secondary-accent: #B45309;
+}
+
+[data-color-mode='cool'] {
+  --background-main: #F3F8FA;
+  --background-card: #FFFFFF;
+  --background-surface: #E6F2F7;
+  --background-lavender: #EDE9FE;
+  --primary-accent: #0369A1;
+  --secondary-accent: #0F766E;
+}
+
+/* Base Reset & Typography */
+body {
+  background-color: var(--background-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible Keyboard Focus States */
+:focus-visible {
+  outline: 2px solid var(--primary-accent);
+  outline-offset: 2px;
+}
+
+/* Clean Card & Button Primitives */
+.glass-card {
+  background: var(--background-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.glass-button {
+  background: var(--primary-accent);
+  color: #FFFFFF;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.glass-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Legacy Dark Utility Remapping for Secondary Views */
+:root:not([data-theme='dark']) .bg-slate-900,
+:root:not([data-theme='dark']) .bg-slate-900\/80,
+:root:not([data-theme='dark']) .bg-slate-900\/90,
+:root:not([data-theme='dark']) .bg-slate-800,
+:root:not([data-theme='dark']) .bg-slate-800\/40,
+:root:not([data-theme='dark']) .bg-slate-800\/50,
+:root:not([data-theme='dark']) .bg-slate-800\/60,
+:root:not([data-theme='dark']) .bg-slate-800\/80,
+:root:not([data-theme='dark']) .bg-gray-900,
+:root:not([data-theme='dark']) .bg-gray-800 {
+  background-color: var(--background-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root:not([data-theme='dark']) .bg-slate-700,
+:root:not([data-theme='dark']) .bg-slate-700\/50,
+:root:not([data-theme='dark']) .bg-slate-700\/60 {
+  background-color: var(--background-surface) !important;
+}
+
+:root:not([data-theme='dark']) .text-slate-100,
+:root:not([data-theme='dark']) .text-slate-200,
+:root:not([data-theme='dark']) .text-gray-100,
+:root:not([data-theme='dark']) .text-gray-200 {
+  color: var(--text-primary) !important;
+}
+
+:root:not([data-theme='dark']) .text-slate-300,
+:root:not([data-theme='dark']) .text-slate-400,
+:root:not([data-theme='dark']) .text-gray-300,
+:root:not([data-theme='dark']) .text-gray-400 {
+  color: var(--text-secondary) !important;
+}
+
+:root:not([data-theme='dark']) .border-slate-700,
+:root:not([data-theme='dark']) .border-slate-700\/40,
+:root:not([data-theme='dark']) .border-slate-600,
+:root:not([data-theme='dark']) .border-gray-700 {
+  border-color: var(--border-color) !important;
+}
