@@ -1,15 +1,22 @@
 import type { ChatMessage } from '../types';
 import { detectCrisis, getCrisisResponse } from './crisisDetection';
-import { classifyMessageSafety } from './safetyClassifier';
+import {
+  MAX_CONVERSATION_MESSAGES,
+  MAX_MESSAGE_CHARS,
+  prepareBoundedClientMessages,
+} from './gatewayAdapter';
 import { learningAnalytics } from './learningAnalytics';
-import { createChatCompletion, type DeepSeekMessage } from './secureClient';
+import { classifyMessageSafety } from './safetyClassifier';
+import {
+  createChatCompletion,
+  TutorGatewayClientError,
+  type DeepSeekMessage,
+} from './secureClient';
 import { usageMonitor } from './usageMonitor';
 
-// Maximum conversation history size to prevent memory bloat
-// Keeps system message + last MAX_HISTORY_SIZE messages
-const MAX_HISTORY_SIZE = 20;
-// How many old messages to hydrate from storage (leave room for new conversation)
-const HYDRATE_LIMIT = 10;
+// Maximum conversation history size (30 messages max per gateway contract)
+const MAX_HISTORY_SIZE = MAX_CONVERSATION_MESSAGES;
+const HYDRATE_LIMIT = 24;
 
 const conversationHistory: DeepSeekMessage[] = [];
 
@@ -24,9 +31,10 @@ export function hydrateBuddyHistory(savedMessages: ChatMessage[]): void {
 
   const recent = savedMessages.slice(-HYDRATE_LIMIT);
   for (const msg of recent) {
+    if (!msg.content?.trim()) continue;
     conversationHistory.push({
       role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
+      content: msg.content.trim().slice(0, MAX_MESSAGE_CHARS),
     });
   }
 }
@@ -37,11 +45,13 @@ export function clearBuddyHistory(): void {
 }
 
 /**
- * Add message to history with automatic size limiting
- * Prevents indefinite memory growth by keeping only recent messages
+ * Add message to history with automatic size & character limiting
  */
 function addToHistory(role: 'user' | 'assistant', content: string): void {
-  conversationHistory.push({ role, content });
+  conversationHistory.push({
+    role,
+    content: content.trim().slice(0, MAX_MESSAGE_CHARS),
+  });
 
   if (conversationHistory.length > MAX_HISTORY_SIZE) {
     const recentMessages = conversationHistory.slice(-MAX_HISTORY_SIZE);
@@ -58,19 +68,12 @@ function crisisReplyToHistory(message: string, category: 'self-harm' | 'abuse'):
   return crisisReply;
 }
 
-/**
- * Over-cap path: safety still runs (a child in distress must never be gated by a
- * usage limit — safety overrides commercial caps). Returns the crisis reply if
- * the online classifier flags, otherwise the usage-limit reason.
- */
-async function overCapReply(message: string, reason: string): Promise<string> {
-  const flagged = await classifyMessageSafety(message).catch(() => null);
-  return flagged ? crisisReplyToHistory(message, flagged) : reason;
-}
-
 function removeFailedUserTurn(message: string): void {
+  const trimmed = message.trim().slice(0, MAX_MESSAGE_CHARS);
   const latest = conversationHistory.at(-1);
-  if (latest?.role === 'user' && latest.content === message) conversationHistory.pop();
+  if (latest?.role === 'user' && (latest.content === message || latest.content === trimmed)) {
+    conversationHistory.pop();
+  }
 }
 
 /** Normal online path: classifier runs concurrently with the answer. */
@@ -78,33 +81,43 @@ async function answerAsBuddy(message: string, reservationId: string): Promise<st
   let retainReservation = false;
   try {
     addToHistory('user', message);
-    const messagesForCompletion: DeepSeekMessage[] = [...conversationHistory];
+    const boundedMessages: DeepSeekMessage[] = prepareBoundedClientMessages(
+      conversationHistory,
+    );
 
-  const startTime = Date.now();
-  // Run the safety classifier alongside the answer (no added latency); if it
-  // flags, discard the answer and surface supportive crisis resources instead.
-  const [classifier, completion] = await Promise.allSettled([
-    classifyMessageSafety(message, 'friend'),
-    createChatCompletion(messagesForCompletion, { chatType: 'friend' }),
-  ]);
+    const startTime = Date.now();
+    // Run the safety classifier alongside the answer (no added latency); if it
+    // flags, discard the answer and surface supportive crisis resources instead.
+    const [classifier, completion] = await Promise.allSettled([
+      classifyMessageSafety(message, 'friend'),
+      createChatCompletion(boundedMessages, { chatType: 'friend' }),
+    ]);
 
-  if (classifier.status === 'fulfilled' && classifier.value) {
-    const crisisReply = getCrisisResponse(classifier.value);
-    addToHistory('assistant', crisisReply);
-    return crisisReply;
-  }
+    if (classifier.status === 'fulfilled' && classifier.value) {
+      const crisisReply = getCrisisResponse(classifier.value);
+      addToHistory('assistant', crisisReply);
+      return crisisReply;
+    }
 
-  if (completion.status === 'rejected') {
-    removeFailedUserTurn(message);
-    throw completion.reason;
-  }
+    if (completion.status === 'rejected') {
+      removeFailedUserTurn(message);
+      throw completion.reason;
+    }
 
-  const duration = Date.now() - startTime;
-  const assistantMessage = completion.value;
-  const inputTokens = messagesForCompletion.reduce((acc, msg) => acc + (msg.content?.length ?? 0), 0);
-  void learningAnalytics.logAICall('server-selected', inputTokens, assistantMessage.length, duration);
+    const duration = Date.now() - startTime;
+    const assistantMessage = completion.value;
+    const inputTokens = boundedMessages.reduce(
+      (acc, msg) => acc + (msg.content?.length ?? 0),
+      0,
+    );
+    void learningAnalytics.logAICall(
+      'server-selected',
+      inputTokens,
+      assistantMessage.length,
+      duration,
+    );
 
-  addToHistory('assistant', assistantMessage);
+    addToHistory('assistant', assistantMessage);
     retainReservation = !(await usageMonitor.commitRequest(reservationId));
     return assistantMessage;
   } finally {
@@ -112,11 +125,8 @@ async function answerAsBuddy(message: string, reservationId: string): Promise<st
   }
 }
 
-export const sendMessageToBuddy = async (
-  message: string,
-): Promise<string> => {
+export const sendMessageToBuddy = async (message: string): Promise<string> => {
   // Safety backstop FIRST: the regex floor is deterministic and offline-safe
-  // (the LLM could be a weaker fallback model, an ignored prompt, or offline).
   const crisis = detectCrisis(message);
   if (crisis) {
     return crisisReplyToHistory(message, crisis);
@@ -124,9 +134,14 @@ export const sendMessageToBuddy = async (
 
   const reservation = usageMonitor.reserveRequest();
   if (!reservation.allowed) {
-    return await overCapReply(
-      message,
+    const flagged = await classifyMessageSafety(message, 'friend').catch(() => null);
+    if (flagged) {
+      return crisisReplyToHistory(message, flagged);
+    }
+    throw new TutorGatewayClientError(
       reservation.reason,
+      429,
+      'ALLOWANCE_EXHAUSTED',
     );
   }
   return answerAsBuddy(message, reservation.reservationId);

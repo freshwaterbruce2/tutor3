@@ -6,6 +6,7 @@ export interface ChatHeaderProps {
   description: string;
   type: 'tutor' | 'friend';
   connectionStatus: 'checking' | 'connected' | 'disconnected';
+  liveAiAvailable?: boolean;
   chatLabel: string;
   messagesCount: number;
   onClearChat: () => void;
@@ -20,6 +21,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   description,
   type,
   connectionStatus,
+  liveAiAvailable = false,
   messagesCount,
   onClearChat,
   onBackToAssignment,
@@ -27,6 +29,20 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenLifeSkills,
   onOpenSocialTips,
 }) => {
+  const statusLabel =
+    connectionStatus === 'disconnected'
+      ? 'Offline Local Mode'
+      : liveAiAvailable
+        ? 'Vibe AI Gateway Ready'
+        : 'Vibe AI Gateway · Setup Pending';
+
+  const statusBadgeClass =
+    connectionStatus === 'disconnected'
+      ? 'bg-amber-100 text-amber-900'
+      : liveAiAvailable
+        ? 'bg-[#EAF6F0] text-[#0F766E]'
+        : 'bg-[#EFEAFA] text-[#6D28D9]';
+
   return (
     <header className="mb-3 bg-[var(--background-card)] border border-[var(--border-color)] rounded-2xl p-3.5 sm:p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -45,10 +61,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               <h1 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] font-display leading-tight">
                 {title}
               </h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EFEAFA] text-[#6D28D9]">
-                {connectionStatus === 'disconnected'
-                  ? 'Offline Local Mode'
-                  : 'Scripted Socratic Demo'}
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${statusBadgeClass}`}
+              >
+                {statusLabel}
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
                 <HardDrive className="w-3 h-3" />

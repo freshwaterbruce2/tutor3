@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Bot,
   Check,
   CheckSquare,
@@ -12,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Send,
+  ShieldAlert,
   Sparkles,
   Trash2,
   X,
@@ -19,6 +21,7 @@ import {
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createDefaultStepsForTask } from '../../hooks/useHomework';
 import { useChatMessages } from '../../hooks/useChatMessages';
+import type { GatewayReadinessStatus } from '../../services/gatewayAdapter';
 import { secureClient } from '../../services/secureClient';
 import { sendMessageToTutor, sendMessageToTutorWithMeta } from '../../services/tutorService';
 import { BuddyToolsOverlay } from './chat/BuddyToolsOverlay';
@@ -79,6 +82,7 @@ const ChatWindow = ({
     historyStatus,
     historyError,
     persistenceError,
+    errorCode,
     showLifeSkills,
     setShowLifeSkills,
     showSocialTips,
@@ -98,6 +102,7 @@ const ChatWindow = ({
   });
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
+  const [gatewayStatus, setGatewayStatus] = useState<GatewayReadinessStatus | null>(null);
   const [isDeviceOffline, setIsDeviceOffline] = useState(() =>
     typeof navigator !== 'undefined' && navigator.onLine === false,
   );
@@ -207,7 +212,7 @@ const ChatWindow = ({
     onAssignmentDraftApplied?.(assignmentHelp.id);
   }, [assignmentHelp, historyStatus, onAssignmentDraftApplied, setInput, type]);
 
-  // Trigger one of the 5 signature Tutor actions
+  // Trigger one of the 5 signature Tutor actions (populates draft without auto-sending)
   const handleGuidedTutorAction = (
     actionType: 'break-down' | 'hint' | 'another-way' | 'example' | 'check-work',
   ) => {
@@ -304,15 +309,15 @@ const ChatWindow = ({
           await new Promise((resolve) => setTimeout(resolve, 500));
           if (epoch !== checkEpoch.current) return;
         }
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        const timeout = new Promise<false>((resolve) => {
-          timer = setTimeout(() => resolve(false), timeoutMs);
-        });
-        const isHealthy = await Promise.race([
-          secureClient.healthCheck(timeoutMs).catch(() => false),
-          timeout,
-        ]);
-        if (timer) clearTimeout(timer);
+        const status = await secureClient.getGatewayStatus(timeoutMs);
+        if (epoch !== checkEpoch.current) return;
+        if (status) {
+          setGatewayStatus(status);
+          setConnectionStatus('connected');
+          setShowOfflineBanner(false);
+          return;
+        }
+        const isHealthy = await secureClient.healthCheck(timeoutMs).catch(() => false);
         if (epoch !== checkEpoch.current) return;
         if (isHealthy) {
           setConnectionStatus('connected');
@@ -361,6 +366,36 @@ const ChatWindow = ({
 
   const activeAssignmentsList = allAssignments.filter((a) => !a.completed);
 
+  const errorBannerBadge = (() => {
+    if (!persistenceError) return null;
+    if (errorCode === 'ALLOWANCE_EXHAUSTED') {
+      return {
+        label: 'Allowance Reached (30/day · 200/month)',
+        tone: 'border-amber-600/35 bg-amber-50 text-amber-950',
+      };
+    }
+    if (errorCode === 'GATEWAY_TIMEOUT') {
+      return {
+        label: 'Request Timed Out',
+        tone: 'border-amber-600/35 bg-amber-50 text-amber-950',
+      };
+    }
+    if (
+      errorCode === 'AUTH_REQUIRED' ||
+      errorCode === 'MISSING_GATEWAY_CREDENTIAL' ||
+      errorCode === 'MISSING_DURABLE_QUOTA'
+    ) {
+      return {
+        label: 'Live AI Unavailable — Missing Server Dependency',
+        tone: 'border-[#6D28D9]/30 bg-[#EFEAFA]/60 text-[var(--text-primary)]',
+      };
+    }
+    return {
+      label: 'Could Not Complete AI Response',
+      tone: 'border-[var(--error-accent)]/30 bg-[var(--error-surface)] text-[var(--text-primary)]',
+    };
+  })();
+
   return (
     <div className="chat-window-root h-full min-h-0 flex flex-col max-w-4xl mx-auto px-3 py-3 sm:px-6 sm:py-5 relative">
       {type === 'friend' && (
@@ -383,6 +418,7 @@ const ChatWindow = ({
         description={description}
         type={type}
         connectionStatus={connectionStatus}
+        liveAiAvailable={Boolean(gatewayStatus?.liveAiAvailable)}
         chatLabel={chatLabel}
         messagesCount={messages.length}
         onClearChat={() => void clearChat()}
@@ -665,12 +701,16 @@ const ChatWindow = ({
           </button>
         </div>
       )}
-      {persistenceError && (
+      {persistenceError && errorBannerBadge && (
         <div
           role="alert"
-          className="mb-3 flex items-start gap-2.5 rounded-xl px-4 py-2.5 text-xs border border-[var(--warning-accent)]/30 bg-[var(--warning-surface)] text-[var(--text-primary)]"
+          className={`mb-3 flex items-start gap-2.5 rounded-xl px-4 py-3 text-xs border ${errorBannerBadge.tone}`}
         >
-          <span className="flex-1">{persistenceError}</span>
+          <AlertCircle size={16} className="shrink-0 mt-0.5 text-current" />
+          <div className="flex-1 space-y-0.5">
+            <p className="font-bold">{errorBannerBadge.label}</p>
+            <p>{persistenceError}</p>
+          </div>
         </div>
       )}
 
@@ -700,9 +740,25 @@ const ChatWindow = ({
                 ? 'Choose a guided action above or ask about any step. I ask one helpful question at a time—and if you are stuck, ask for a worked explanation anytime.'
                 : 'Need help starting a study routine, taking a calm reset, or planning overdue work without stress?'}
             </p>
-            <p className="text-[11px] text-[var(--text-muted)] bg-[var(--background-main)] border border-[var(--border-color)] rounded-xl px-3 py-2 mb-4">
-              <strong>Honest AI Mode:</strong> Running the built-in Scripted Socratic Tutoring Demo. No teen messages are sent to unverified external LLM APIs.
-            </p>
+            {gatewayStatus && !gatewayStatus.liveAiAvailable ? (
+              <div className="text-left text-[11px] text-[var(--text-secondary)] bg-[var(--background-main)] border border-[var(--border-color)] rounded-xl px-3.5 py-2.5 mb-4 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+                  <ShieldAlert size={14} className="text-[#6D28D9] shrink-0" />
+                  <span>Vibe AI Gateway Adapter Connected · Live AI Gated</span>
+                </div>
+                <p>
+                  Route <code className="font-mono">/api/tutor/chat</code> is wired to{' '}
+                  <code className="font-mono">vibe-ai-gateway</code>. Live AI remains gated until
+                  the following required server dependencies are connected:{' '}
+                  <strong>{gatewayStatus.missingDependencies.join(', ')}</strong>.
+                </p>
+              </div>
+            ) : (
+              <p className="text-[11px] text-[var(--text-muted)] bg-[var(--background-main)] border border-[var(--border-color)] rounded-xl px-3 py-2 mb-4">
+                <strong>Vibe AI Gateway:</strong> Connected via server-owned Socratic Tutor &amp;
+                Study Buddy adapter (30/day · 200/month allowance).
+              </p>
+            )}
           </div>
         )}
 
@@ -760,7 +816,7 @@ const ChatWindow = ({
         })}
 
         {isLoading && (
-          <div className="flex justify-start">
+          <div className="flex justify-start" role="status" aria-live="polite">
             <div className="max-w-xl">
               <div className="flex items-center gap-2 mb-1">
                 {type === 'tutor' ? (
@@ -784,6 +840,7 @@ const ChatWindow = ({
             rows={2}
             id="chat-input"
             name="chat-input"
+            maxLength={6000}
             value={input}
             onChange={(e) => setComposerInput(e.target.value)}
             onKeyDown={(e) => {
@@ -811,13 +868,13 @@ const ChatWindow = ({
             aria-label="Send message"
           >
             <Send size={16} />
-            <span>Send</span>
+            <span>{isLoading ? 'Sending…' : 'Send'}</span>
           </button>
         </div>
         {!isTouch && (
           <div className="mt-1 text-center">
             <span className="text-[11px] text-[var(--text-muted)]">
-              Enter sends · Shift+Enter adds a new line
+              Enter sends · Shift+Enter adds a new line · Max 6,000 chars
             </span>
           </div>
         )}
