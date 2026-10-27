@@ -9,6 +9,10 @@ Owner decisions recorded on 2026-10-27:
 - **Gamer theme** means freeze the product as it renders today: daylight shell, neon game screens, Focus Gamer. Do not repaint the shell neon from the unused `roblox-gaming` config.
 - **Switch limit** is one free committed change per local week starting Monday, plus one free first choice that does not use that week, plus a parent PIN override that does not use it either.
 - **App price.** A $4.99 one-time fee for the app is too low and will lose money. The owner wants either a subscription with a lower entry price, or the one-time purchase kept and paired with in-app purchases. Section 4 compares those and recommends a parent-gated subscription for the cloud tutor, with token spending and optional IAP kept separate from that bill. No price is implemented in this pull request. The repo still has no Play Billing product.
+- **No accounts.** Do not create accounts to enforce the switch limit. Clearing app storage may reset that limit. That tradeoff is accepted.
+- **Music shelves.** Yes to a study shelf and a break shelf, and yes to removing DEF CON Radio. Look for more stations. K-LOVE is wanted and is blocked until Educational Media Foundation gives written permission to play it inside this app.
+- **Themes are cosmetic.** A positivity theme changes colors, backgrounds, and other UI chrome. It does not add, remove, or replace features. Wellness, music, homework, games, and the token shop stay available on every theme.
+- **Reset copy.** Yes. When the switch profile ships, the Reset App confirmation is updated so it matches what Reset actually clears and what it keeps.
 
 ## 1. What exists today
 
@@ -149,7 +153,9 @@ Sensory `colorMode`, font size, dyslexia font, animation, sound, and haptics sta
 
 ### 2.2 Tokens
 
-A theme is a bag of presentation tokens, applied by setting one attribute such as `data-companion-theme="gamer"` on `<html>`. Each theme defines the same keys the shell already uses: background, card, surface, primary, secondary, tertiary, text, border, token-color, and a display name plus icon for the currency. Game screens that hardcode purple and cyan stay as they are in the gamer theme. Later themes can restyle them only by replacing those hardcoded classes with the shared tokens, in a phase that has visual snapshots. Until that phase, gamer must keep the current class names.
+A theme is cosmetic. It changes colors, backgrounds, cards, and the currency’s on-screen name and icon. It does not turn features on or off. Homework, focus, games, the shop, rewards, music, and the Wellness Hub stay on every theme, with the same actions and the same saved data. The positivity pack does not replace the hub’s lines, hide a station, or change earning rules.
+
+A theme is applied by setting one attribute such as `data-companion-theme="gamer"` on `<html>`. Each theme defines the same keys the shell already uses: background, card, surface, primary, secondary, tertiary, text, border, token-color, and a display name plus icon for the currency. Game screens that hardcode purple and cyan stay as they are in the gamer theme. Later themes can restyle them only by replacing those hardcoded classes with the shared tokens, in a phase that has visual snapshots. Until that phase, gamer must keep the current class names.
 
 `gamer` is a snapshot of today’s rendered product: daylight shell from `theme.css`, current game-screen colors, Focus Gamer available, current shop and wallet layout. It is not a revival of the unused `roblox-gaming` config, and it is not the unused `data-theme='dark'` block. Shipping a brighter neon shell would be a visual change for everyone who has the app now.
 
@@ -221,9 +227,9 @@ Store the profile in SQLite `user_settings` on Android and in the same `appStore
 
 It does not survive “clear storage” or uninstall. The privacy policy already tells families that Android clear-storage wipes local data, including the installation id. A new install after that looks like a new install: positivity default, a fresh free initial choice, empty ledger. Tying the counter to the server-side installation hash would survive a local wipe only until the id is deleted, which clear-storage already deletes, and it would be a new off-device record of a minor’s behavior. This app has no accounts. The recommendation is to keep the switch profile on device and to say so in the privacy policy when the feature ships.
 
-In-app Reset today clears homework, the legacy achievements table, the achievement lifecycle, `student_points`, the reward catalog, and sensory preferences. It does not clear the token ledger, avatar state, chat, schedules, or the installation id. The switch profile should follow the token ledger and the avatar: Reset leaves it in place. Wiping the limit while leaving the avatar would let Reset become the bypass. Document that in the Reset confirmation when the feature ships, so the sentence matches the behavior.
+In-app Reset today clears homework, the legacy achievements table, the achievement lifecycle, `student_points`, the reward catalog, and sensory preferences. It does not clear the token ledger, avatar state, chat, schedules, or the installation id. The switch profile should follow the token ledger and the avatar: Reset leaves it in place. Wiping the limit while leaving the avatar would let Reset become the bypass. The owner asked for the Reset confirmation to be rewritten in that same phase so the sentence lists what is cleared and what stays, including the companion theme and the switch history.
 
-Parent override remains the supported way past the limit. A purchased credit is the other supported way. Clearing storage is a real bypass with a real cost (the child loses homework, tokens, and chat). Closing that hole needs an account or a server record. That is a product and privacy decision, listed in the open questions, and it is out of scope for the first implementation.
+Parent override remains the supported way past the limit. A purchased credit is the other supported way. Clearing storage is a real bypass with a real cost (the child loses homework, tokens, and chat). The owner decided not to create accounts to close that hole. No server-side switch record.
 
 ### 3.4 Tests to add when the feature is built
 
@@ -308,7 +314,9 @@ This plan does not change economy code or purchase code.
 
 ## 5. Positivity content model
 
-New copy lives in a data module the positivity theme reads. The gamer theme keeps today’s Wellness Hub lines until a later phase decides whether that hub becomes theme-aware. The gamer snapshot includes the current hub, so the first positivity release can add a module without rewriting the hub that existing users see.
+The owner decided a positivity theme does not change features. It changes cosmetics: colors, backgrounds, and the rest of the UI chrome. The Wellness Hub, its daily line, the thought journal, and any later tips stay one feature on every theme. Positivity restyles that screen. It does not swap in a different hub, and gamer does not hide it.
+
+If new affirmations, health notes, body notes, esteem lines, or optional spiritual lines are added later, they are added to that shared hub, not to a theme. The checklist below is for that copy. It is not a theme switch. This pull request does not add the copy.
 
 Each item:
 
@@ -359,15 +367,21 @@ What the sources support, and where they stop:
 - Young adults screened for ADHD symptoms reported listening to background music more while studying, and a stronger preference for stimulating music, than a comparison group. Across both groups, more people preferred relaxing, instrumental, familiar, self-chosen music during harder cognitive tasks, and stimulating music with lyrics during easier tasks (Lachance, Pelland-Goulet, and Gosselin, *Frontiers in Psychology*, 2025, https://doi.org/10.3389/fpsyg.2024.1508181). The sample was ages 17–30, not children, and the outcomes were self-report. Preference and familiarity show up more clearly than any one genre.
 - Autistic adolescents in one questionnaire study had had more childhood sound sensitivity than peers, and later musical interest was still broad. A larger share named classical as a favorite; tastes were otherwise individual (Bhatara, Quintin, and colleagues, *Psychomusicology*, 2013, https://doi.org/10.1037/a0033754). A 2022 review of music studies in autism (Applewhite, Cankaya, Heiderscheit, and Himmerich, *International Journal of Environmental Research and Public Health*, https://doi.org/10.3390/ijerph19095150) describes music used for mood and personal reasons, and stronger responses to music a person already prefers. The same review discusses music-therapy interventions and says most of those studies were small and few were randomized trials. That is not evidence this radio player is therapy, and it is not a reason to assign a genre. It is a reason to keep a volume control, a predictable station, and a real off switch.
 - IFPI’s *Engaging with Music 2023* (ages 16–64, online population) ranks favorite genres globally as pop, rock, hip-hop/rap, dance/electronic, Latin, then R&B, with classical further down (https://www.ifpi.org/wp-content/uploads/2023/12/IFPI-Engaging-With-Music-2023_full-report.pdf). It is not a neurodivergent sample and it is not ages 10–15. It is a reasonable check on what “teens like” usually means in the wider population: the app’s catalog is thin on pop and hip-hop.
+- In preadolescents about age 10, one quasi-experiment found reading comprehension improved with background music in the ADHD group (calm instrumental, calm with lyrics, and rhythmic with lyrics were all tested) and got worse in the comparison group (Madjar, Gazoli, Manor, and Shoval, *Psychiatry Research*, 2020, https://doi.org/10.1016/j.psychres.2020.113207). The main sample was 25 children per group, after a pilot of 20. The authors did not claim one music type won. This disagrees with the adult lyrics finding above, so the app should not tell every child to study in silence or with lyrics.
+- Boys aged about 10–12, with and without ADHD, made somewhat fewer errors on an attention-network test while music played. Reaction time did not change, and the ADHD group was not affected more than the other group (Mendes, de Paula, and Miranda, *Interactive Journal of Medical Research*, 2024, https://doi.org/10.2196/53869). The sample was boys only.
+- A 2025 review of 20 ADHD-and-music studies (Saville, Kinney, Heiderscheit, and Himmerich, *Behavioral Sciences*, https://doi.org/10.3390/bs15010065) says most listening studies reported a benefit and that the studies disagree with each other on diagnosis, medication, and method. A 2023 review (Martin-Moratinos, Bella-Fernández, and Blasco-Fontecilla, *Journal of Medical Internet Research*, https://doi.org/10.2196/37742) mixes listening with music therapy and with video-game ideas. Neither review is a trial of this app’s radio stations, and neither makes the player a treatment.
+- A meta-analysis of music *therapy* sessions for autistic children found a small gain on social reactions (SMD 0.24) and no clear gain on speech or symptom scores (Ke, Song, Yang, Li, and Liu, *Frontiers in Psychiatry*, 2022, https://pmc.ncbi.nlm.nih.gov/articles/PMC9582596/). Those were therapist-led sessions, not a station left on during homework.
+
+K-LOVE is Positive Encouraging K-LOVE, a Christian contemporary network from Educational Media Foundation, with an official app (`com.emf.klove`) and site streams such as the main feed, Eras, Future Hits, and POP!. Their terms say site content is for personal, non-commercial use and that it may not be copied, transmitted, or distributed without K-LOVE’s express prior written consent (https://release.klove.com/policies/terms-of-use). Playing `listen.klove.com` inside this app is that kind of transmission. This plan does not add the stream, the logo, or the wordmark. The music phase can ask EMF in writing for permission to name the station and to play a specific stream URL. Until that letter exists, the app can tell a parent the official app exists and must not open the stream itself. K-LOVE is lyric-heavy Christian pop and worship, so if permission arrives it belongs on a labeled faith shelf, not on the study shelf, and not as the sound of the positivity theme. Themes do not change the music feature. Air1, their sister network, has the same permission problem and is out until the same kind of letter exists.
 
 Recommendation for a later music change, not for this pull request:
 
-1. Split the screen into “While you study” and “For a break,” in that order. Study shelf: instrumental or very low-lyric, steady, and already on the list where the license allows it (Groove Salad, Space Station, WQXR, Sonic Universe if the owner still wants a game-score option). Break shelf: Beat Blender, Indie Pop, Underground 80s, LISTEN.moe, Cliq Hop.
+1. Split the screen into “While you study” and “For a break,” in that order. Study shelf: instrumental or very low-lyric, steady, and already on the list where the license allows it (Groove Salad, Space Station, WQXR, Sonic Universe if the owner still wants a game-score option). Break shelf: Beat Blender, Indie Pop, Underground 80s, LISTEN.moe, Cliq Hop. The shelves are a starting layout. A child can still pick a lyric station while studying, because the child studies are mixed and preference matters.
 2. Let the child mark a small set of favorites. The research that exists keeps pointing at self-chosen and familiar music more than at a house genre.
 3. Keep the off control obvious, and keep honoring the sensory sound setting for UI sounds. Add a one-line note that a station can be stopped if it feels like too much. Do not call the player therapy, focus treatment, or ADHD support.
-4. Drop or relabel DEF CON Radio unless the owner wants that name on a teen homework screen. The stream is electronic music; the brand is a security conference.
-5. Before adding pop or hip-hop streams, check the station’s terms and whether lyrics are appropriate for the published 13–17 scope. Commercial streams (Spotify, YouTube) bring accounts, recommendations, and ads. The unused playlist types should stay unused unless those issues are designed on purpose.
-6. Confirm SomaFM, LISTEN.moe, and WQXR allow in-app playback, and keep the privacy-policy sentence that names those hosts accurate if the list changes.
+4. Remove DEF CON Radio. The owner said yes. The stream is electronic music; the brand is a security conference.
+5. Before adding pop or hip-hop streams, check the station’s terms and whether lyrics are appropriate for the published 13–17 scope. Commercial streams (Spotify, YouTube) bring accounts, recommendations, and ads. The unused playlist types should stay unused. The owner does not want new accounts.
+6. Confirm SomaFM, LISTEN.moe, and WQXR allow in-app playback, and keep the privacy-policy sentence that names those hosts accurate if the list changes. Add K-LOVE only after written permission, on a faith shelf whose label says it is Christian contemporary music. Do not use their logo without that same permission.
 
 Uncertainty to leave in the UI and in release notes: nothing in this catalog is proven to help neurodivergent students learn. Some listening is linked with slightly worse reading in adult studies, especially with lyrics. Some teens, including teens with attention difficulties, like having music on anyway. The honest product is a player they can choose and can stop.
 
@@ -400,11 +414,11 @@ Before any implementation phase is called done:
 
 1. **This pull request.** Plan only.
 2. **Profile and gamer snapshot.** Add the profile type, the migration that writes `gamer` for existing data, and `data-companion-theme=gamer` pointing at the current CSS variables. No new colors, no picker, no spend. Existing and new installs still look the same, because positivity is not applied yet. Tests from section 3.4 that cover migration only.
-3. **Positivity for empty installs.** New palette, new notes module with the spiritual toggle defaulting off, empty-install default. Existing profiles stay gamer. Picker can show both themes. Weekly limit and initial-choice rule turn on here.
+3. **Positivity for empty installs.** New colors and backgrounds only. Same features as gamer. Existing profiles stay gamer. Picker can show both themes. Weekly limit and initial-choice rule turn on here.
 4. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
 5. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
 6. **Music shelves.** Relabel and regroup stations, license check, copy pass. No clinical claims.
-7. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, privacy policy, and Data safety update in that release. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. Server-side switch record only if the owner accepts the privacy cost in section 3.3.
+7. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, privacy policy, and Data safety update in that release. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
 
 Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
 
@@ -416,10 +430,10 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 4. **Audience age.** The privacy policy says 13–17 and not under 13. The product is described as for kids and teens. Which ages should the new copy and the Play target audience use? Younger ages change Families rules, spiritual copy, and music lyrics.
 5. **Spiritual toggle.** Recommended default: off, non-denominational, no scripture, parent-controlled. Do you want a specifically Christian pack later, kept separate from the default?
 6. **Blocky art.** Who draws the original blocky companion, and is “blocky builder” an acceptable public name so the UI never says Roblox?
-7. **Clear-storage bypass.** Recommended default: accept that clearing app storage resets the switch limit, because the app has no accounts and the current privacy policy treats clear-storage as a full local delete. Do you want a later account or server record instead?
-8. **Music.** Is the study-shelf / break-shelf split right, and should DEF CON Radio leave the list? Should pop or hip-hop be added once a licensed stream is found?
-9. **Wellness Hub.** Should positivity replace the hub’s daily line for everyone, or only when that theme is active, leaving the current lines in place for gamer?
-10. **Reset App copy.** Reset currently zeros `student_points` and does not clear the token ledger. When the switch profile is added, Reset should keep the profile. Do you want the confirmation sentence updated in that same phase so it matches?
+7. **Clear-storage bypass.** Decided: do not create accounts. Clearing app storage may reset the switch limit. No server record.
+8. **Music.** Decided: yes to the study shelf and the break shelf, and yes to removing DEF CON Radio. K-LOVE is requested. It stays out of the player until Educational Media Foundation gives written permission. Pop or hip-hop still waits on a station whose terms allow an in-app stream.
+9. **Wellness Hub.** Decided: no. A positivity theme does not change features. It changes colors, backgrounds, and other UI chrome. The hub’s lines stay the same feature on every theme.
+10. **Reset App copy.** Decided: yes. Update the confirmation when the switch profile ships so it matches what Reset clears and what it keeps.
 
 ## 11. Sources
 
@@ -430,6 +444,12 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 - Bhatara, A., Quintin, E.-M., Fombonne, E., & Levitin, D. J. (2013). Early sensitivity to sound and musical preferences and enjoyment in adolescents with autism spectrum disorders. *Psychomusicology: Music, Mind, and Brain*. https://doi.org/10.1037/a0033754
 - Applewhite, B., Cankaya, Z., Heiderscheit, A., & Himmerich, H. (2022). A systematic review of scientific studies on the effects of music in people with or at risk for autism spectrum disorder. *International Journal of Environmental Research and Public Health*. https://doi.org/10.3390/ijerph19095150
 - IFPI. (2023). *Engaging with Music 2023*. https://www.ifpi.org/wp-content/uploads/2023/12/IFPI-Engaging-With-Music-2023_full-report.pdf
+- Madjar, N., Gazoli, R., Manor, I., & Shoval, G. (2020). Contrasting effects of music on reading comprehension in preadolescents with and without ADHD. *Psychiatry Research*. https://doi.org/10.1016/j.psychres.2020.113207
+- Mendes, C. G., de Paula, J. J., & Miranda, D. M. (2024). Effects of background music on attentional networks of children with and without attention deficit/hyperactivity disorder. *Interactive Journal of Medical Research*. https://doi.org/10.2196/53869
+- Saville, P., Kinney, C., Heiderscheit, A., & Himmerich, H. (2025). Exploring the intersection of ADHD and music: A systematic review. *Behavioral Sciences*. https://doi.org/10.3390/bs15010065
+- Martin-Moratinos, M., Bella-Fernández, M., & Blasco-Fontecilla, H. (2023). Effects of music on attention-deficit/hyperactivity disorder (ADHD) and potential application in serious video games: Systematic review. *Journal of Medical Internet Research*. https://doi.org/10.2196/37742
+- Ke, X., Song, W., Yang, M., Li, J., & Liu, W. (2022). Effectiveness of music therapy in children with autism spectrum disorder: A systematic review and meta-analysis. *Frontiers in Psychiatry*. https://pmc.ncbi.nlm.nih.gov/articles/PMC9582596/
+- K-LOVE terms of use. https://release.klove.com/policies/terms-of-use
 - Google Play Families policies. https://support.google.com/googleplay/android-developer/answer/9893335
 - Google Play payments policy. https://support.google.com/googleplay/android-developer/answer/9858738
 - Google Play purchase approvals. https://support.google.com/googleplay/answer/7039872
