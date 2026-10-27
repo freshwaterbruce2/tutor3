@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { GraduationCap, Play, Sparkles } from 'lucide-react';
 import AchievementToast from './components/ui/AchievementToast';
 import OfflineIndicator from './components/ui/OfflineIndicator';
@@ -42,7 +42,12 @@ import { useWorksheet } from './hooks/useWorksheet';
 import { logger } from './utils/logger';
 import {
   appStore,
+  clearStorageFailure,
+  decodeStoredJson,
   getStorageFailureSnapshot,
+  isQuotaExceededError,
+  logStorageFailure,
+  presentStorageFailure,
   subscribeToStorageFailures,
 } from './utils/electronStore';
 import { TokenEarnAnimation } from './components/features/TokenEarnAnimation';
@@ -51,6 +56,25 @@ import { DEFAULT_UNLOCKED_AVATAR_IDS, normalizeAvatarId } from './services/avata
 
 const CHECKLIST_BONUS_TOKENS = 50;
 const ACTIVE_WORK_STORAGE_KEY = 'vibetutor_active_work_v2';
+const ACTIVE_WORK_READ_DETAIL = 'The saved assignment could not be opened.';
+
+function readStoredActiveWork(): ActiveWorkContext | null {
+  const raw = appStore.getStrict<unknown>(ACTIVE_WORK_STORAGE_KEY);
+  if (raw == null || raw === '') return null;
+  const decoded = decodeStoredJson(raw);
+  if (!decoded || typeof decoded !== 'object') return null;
+  const parsed = decoded as ActiveWorkContext;
+  if (typeof parsed.assignmentId !== 'string') return null;
+  return parsed;
+}
+
+function activeWorkWriteDetail(error: unknown, clearing: boolean): string {
+  if (!clearing && isQuotaExceededError(error)) {
+    return 'The current assignment could not be saved because device storage is full.';
+  }
+  if (clearing) return 'The current assignment could not be cleared on this device.';
+  return 'The current assignment could not be saved on this device.';
+}
 
 interface StartupData {
   onboardingFlags: OnboardingFlags;
@@ -73,33 +97,85 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
   const [userName, setUserName] = useState(startup.userName);
 
   // Persistent Active Work Context (follows student across Today, Tutor, and Focus)
+  const activeWorkNoticeIdRef = useRef<number | null>(null);
+  const activeWorkReadErrorRef = useRef<unknown>(undefined);
+  const retryActiveWorkReadRef = useRef<() => void>(() => {});
+  const setActiveWorkRef = useRef<(ctx: ActiveWorkContext | null) => void>(() => {});
   const [activeWork, setActiveWorkState] = useState<ActiveWorkContext | null>(() => {
+    activeWorkReadErrorRef.current = undefined;
     try {
-      const raw = appStore.get(ACTIVE_WORK_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ActiveWorkContext;
-        if (parsed && typeof parsed.assignmentId === 'string') return parsed;
-      }
-    } catch {
-      // Ignore parse error
+      return readStoredActiveWork();
+    } catch (error) {
+      activeWorkReadErrorRef.current = error;
+      return null;
     }
-    return null;
   });
 
   const [focusInitialMinutes, setFocusInitialMinutes] = useState<number | undefined>(undefined);
 
-  const setActiveWork = useCallback((ctx: ActiveWorkContext | null) => {
-    setActiveWorkState(ctx);
-    try {
-      if (ctx) {
-        appStore.set(ACTIVE_WORK_STORAGE_KEY, JSON.stringify(ctx));
-      } else {
-        appStore.delete(ACTIVE_WORK_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage error
-    }
+  const clearActiveWorkNotice = useCallback(() => {
+    const id = activeWorkNoticeIdRef.current;
+    if (id === null) return;
+    activeWorkNoticeIdRef.current = null;
+    clearStorageFailure(id);
   }, []);
+
+  const reportActiveWorkFailure = useCallback(
+    (
+      detail: string,
+      operation: 'read' | 'write' | 'delete',
+      retry: () => void,
+      reason: 'quota' | 'unavailable' = 'unavailable',
+    ) => {
+      activeWorkNoticeIdRef.current = presentStorageFailure({
+        store: 'persistent',
+        operation,
+        reason,
+        detail,
+        retry,
+      });
+    },
+    [],
+  );
+
+  retryActiveWorkReadRef.current = () => {
+    try {
+      setActiveWorkState(readStoredActiveWork());
+      clearActiveWorkNotice();
+    } catch (error) {
+      logStorageFailure('Failed to restore the current assignment:', error);
+      reportActiveWorkFailure(ACTIVE_WORK_READ_DETAIL, 'read', () => retryActiveWorkReadRef.current());
+    }
+  };
+
+  useLayoutEffect(() => {
+    const error = activeWorkReadErrorRef.current;
+    if (error === undefined) return;
+    logStorageFailure('Failed to restore the current assignment:', error);
+    reportActiveWorkFailure(ACTIVE_WORK_READ_DETAIL, 'read', () => retryActiveWorkReadRef.current());
+  }, [reportActiveWorkFailure]);
+
+  const setActiveWork = useCallback(
+    (ctx: ActiveWorkContext | null) => {
+      setActiveWorkState(ctx);
+      try {
+        if (ctx) appStore.setStrict(ACTIVE_WORK_STORAGE_KEY, ctx);
+        else appStore.deleteStrict(ACTIVE_WORK_STORAGE_KEY);
+        clearActiveWorkNotice();
+      } catch (error) {
+        logStorageFailure('Failed to save the current assignment:', error);
+        const clearing = ctx == null;
+        reportActiveWorkFailure(
+          activeWorkWriteDetail(error, clearing),
+          clearing ? 'delete' : 'write',
+          () => setActiveWorkRef.current(ctx),
+          !clearing && isQuotaExceededError(error) ? 'quota' : 'unavailable',
+        );
+      }
+    },
+    [clearActiveWorkNotice, reportActiveWorkFailure],
+  );
+  setActiveWorkRef.current = setActiveWork;
 
   const storageFailure = useSyncExternalStore(
     subscribeToStorageFailures,
@@ -109,6 +185,11 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
   const [dismissedStorageFailureId, setDismissedStorageFailureId] = useState<number | null>(null);
   const showStorageWarning =
     storageFailure !== null && storageFailure.id !== dismissedStorageFailureId;
+  const storageWarningHint = !storageFailure?.detail
+    ? 'Check your storage, then retry the action you were taking.'
+    : storageFailure.reason === 'quota'
+      ? 'Free up space on this device, then retry.'
+      : 'Check your storage, then retry.';
 
   const {
     homeworkItems,
@@ -732,22 +813,36 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
             ref={mobileContentRef}
             className={`h-full overflow-y-auto ${isOnboardingView ? 'pb-4' : 'pb-mobile-nav-safe'}`}
           >
-            {showStorageWarning && (
+            {showStorageWarning && storageFailure && (
               <div
                 role="alert"
                 className="m-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
               >
-                <p className="font-semibold">A saved data change may be incomplete.</p>
-                <p className="mt-1 text-sm text-amber-800">
-                  Check your storage, then retry the action you were taking.
+                <p className="font-semibold">
+                  {storageFailure.detail ?? 'A saved data change may be incomplete.'}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setDismissedStorageFailureId(storageFailure.id)}
-                  className="mt-3 rounded-lg bg-amber-200 px-3 py-1.5 text-sm font-semibold text-amber-950"
-                >
-                  Acknowledge
-                </button>
+                <p className="mt-1 text-sm text-amber-800">{storageWarningHint}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {storageFailure.retry && (
+                    <button
+                      type="button"
+                      onClick={() => storageFailure.retry?.()}
+                      className="rounded-lg bg-[#0F766E] px-3 py-1.5 text-sm font-semibold text-white"
+                    >
+                      Retry
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearStorageFailure(storageFailure.id);
+                      setDismissedStorageFailureId(storageFailure.id);
+                    }}
+                    className="rounded-lg bg-amber-200 px-3 py-1.5 text-sm font-semibold text-amber-950"
+                  >
+                    Acknowledge
+                  </button>
+                </div>
               </div>
             )}
             {achievementError && (
