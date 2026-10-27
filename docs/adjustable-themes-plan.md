@@ -13,7 +13,7 @@ Owner decisions recorded on 2026-10-27:
 - **Music shelves.** Yes to a study shelf and a break shelf, and yes to removing DEF CON Radio. Where the studies disagree, the player offers a choice and does not claim a station is proven to help. K-LOVE is wanted and is blocked until Educational Media Foundation gives written permission. It is not the sound of the spiritual theme.
 - **Themes are cosmetic.** A positivity theme changes colors, backgrounds, and other UI chrome. It does not add, remove, or replace features. Wellness, music, homework, games, and the token shop stay available on every theme.
 - **Reset copy.** Yes. When the switch profile ships, the Reset App confirmation is updated so it matches what Reset actually clears and what it keeps.
-- **Audience.** Youngest age is 11, not younger. The store range becomes 11–17 in the release that changes the listing. This pull request does not edit the privacy policy, which still says teens 13–17 and not under 13. The buyer the listing speaks to is the parent.
+- **Audience.** Youngest age stays 13. The range stays teens 13–17, matching the privacy policy already published. Do not add ages 11–12. Play target groups stay Ages 13–15 and Ages 16–17.
 - **Spiritual pack.** Prefer spiritual, not a Christian pack. One parent switch, default off, public name Steady Light. It adds a cosmetic theme and an optional quiet line. It does not change features, earning, or which theme a new install starts on. No scripture, no named deity, and no claim that it improves homework.
 
 ## 1. What exists today
@@ -301,7 +301,7 @@ This app does not sell anything for money. There is no billing library, no in-ap
 - The child’s entry point needs a parent gate before any price is shown. The Parent Zone PIN is the gate this app already has. Play’s family purchase-approval is a second gate on the Google account, and it only helps if the device is in a family group with approvals on. The in-app PIN still has to run first, so a child never meets a price sheet alone.
 - Data safety and the privacy policy have to mention purchases. Play Billing is processed by Google. The app should store a purchase token only as long as needed to grant the credit, and it should not send that token to the tutor backend.
 - Copy on the child side cannot pressure: no “only $0.99,” no sadness when they decline, no limited-time price, no character looking disappointed. The child-facing path can say a parent can allow an extra change. The price belongs on the parent side of the PIN.
-- The owner set the youngest age at 11, so the billing release includes children and the Families ads and monetization rules apply: no emotionally manipulative purchase offers, and a visible difference between tokens and real money. The privacy policy on the site today still says ages 13–17 and not under 13. That sentence is updated in the same release that declares the new audience, not in this pull request.
+- The youngest age stays 13, so this billing release does not add children under 13 to the target audience. The parent PIN still comes before any price, and the screen still shows a visible difference between tokens and real money. The privacy policy already says ages 13–17 and not under 13. That sentence stays.
 - The repo’s release rule is to add Play Billing only when the product being built is a paid or billed product. A theme switch is not that product unless the owner explicitly chooses option B or C.
 
 ### Option C — both
@@ -348,7 +348,7 @@ This plan does not change economy code or purchase code.
 
 The owner decided a positivity theme does not change features. It changes cosmetics: colors, backgrounds, and the rest of the UI chrome. The Wellness Hub, its daily line, the thought journal, and any later tips stay one feature on every theme. Positivity restyles that screen. It does not swap in a different hub, and gamer does not hide it.
 
-If new affirmations, health notes, body notes, esteem lines, or optional spiritual lines are added later, they are added to that shared hub. The quiet line is the one exception that a parent can hide, and hiding it does not hide the hub. The checklist below is for that copy. It is not a theme switch. This pull request does not add the copy. Reading level for new lines is about age 11, which is the youngest audience in section 10.
+If new affirmations, health notes, body notes, esteem lines, or optional spiritual lines are added later, they are added to that shared hub. The quiet line is the one exception that a parent can hide, and hiding it does not hide the hub. The checklist below is for that copy. It is not a theme switch. This pull request does not add the copy. Reading level for new lines is a teen of about 13, which is the youngest age in section 10.
 
 Each item:
 
@@ -359,7 +359,7 @@ interface CompanionNote {
   text: string;
   reflection?: string;
   spirit: boolean;          // true only for the optional Steady Light quiet line
-  minAge: 11;               // youngest age the owner set; the live privacy policy still says 13 until that release
+  minAge: 13;               // youngest age; matches the published 13–17 scope
   reviewStatus: 'draft' | 'approved';
 }
 ```
@@ -383,7 +383,7 @@ Before a line is marked `approved`:
 3. It does not give medical, diet, or mental-health instructions, and it does not promise an outcome.
 4. Spiritual lines are off unless the parent toggle is on, and they are non-denominational.
 5. It does not mention brands, including Roblox, and it does not use another person’s character.
-6. It can be read aloud by an 11-year-old, and it is still appropriate at 17. The live store text stays 13–17 until the audience release.
+6. It fits ages 13–17, the published audience. It does not read as if it were written for a younger child.
 7. The mood check-in stays optional. Skipping it still lets the child do homework.
 8. Stored reflections stay on device. The plan does not send note text or mood to the tutor backend.
 
@@ -412,7 +412,7 @@ Recommendation for a later music change, not for this pull request:
 2. Let the child mark a small set of favorites. The research that exists keeps pointing at self-chosen and familiar music more than at a house genre.
 3. Keep the off control obvious, and keep honoring the sensory sound setting for UI sounds. Add a one-line note that a station can be stopped if it feels like too much. Do not call the player therapy, focus treatment, or ADHD support.
 4. Remove DEF CON Radio. The owner said yes. The stream is electronic music; the brand is a security conference.
-5. Before adding pop or hip-hop streams, check the station’s terms and whether lyrics are appropriate for ages 11–17. Commercial streams (Spotify, YouTube) bring accounts, recommendations, and ads. The unused playlist types should stay unused. The owner does not want new accounts.
+5. Before adding pop or hip-hop streams, check the station’s terms and whether lyrics are appropriate for ages 13–17. Commercial streams (Spotify, YouTube) bring accounts, recommendations, and ads. The unused playlist types should stay unused. The owner does not want new accounts.
 6. Confirm SomaFM, LISTEN.moe, and WQXR allow in-app playback, and keep the privacy-policy sentence that names those hosts accurate if the list changes. Add K-LOVE only after written permission, on a parent-off shelf whose label says it is Christian contemporary music. Do not use their logo without that same permission. Do not attach that shelf to Steady Light.
 
 What to follow when the studies do not agree:
@@ -428,7 +428,7 @@ Uncertainty to leave in the UI and in release notes: nothing in this catalog is 
 
 - Do not ship Roblox logos, the Roblox wordmark, Roblox characters, catalog item names, or “oof” / badge sounds as theme assets. The blocky theme is original art of blocky people in original worlds. `TUTOR_CONFIG` still contains Roblox reward names and “roblox-oof” sound ids, and those strings are currently unused. Before any theme reads that file, those strings come out of the user-facing path. This plan does not edit the file, so today’s behavior stays.
 - Avatar PNGs stay the current six files for the gamer option. New faces are new files drawn for this app. `PLACEHOLDER.md` is an art spec, not a license for third-party characters.
-- Audience, for the release that changes the store: ages 11–17. Play Console target groups are Ages 9–12, Ages 13–15, and Ages 16–17 (https://support.google.com/googleplay/android-developer/answer/9867159). Do not select Ages 5 and under, Ages 6–8, or 18 and over. Ages 9–12 are children in most places, so Google Play Families policy applies to the whole app (https://support.google.com/googleplay/android-developer/answer/9893335), including purchases. In the US, 11 and 12 are also under the federal children’s privacy rule. This plan is not legal advice. Before that release, have the privacy policy reviewed, including the installation id that is hashed on the server for AI counters, because a persistent identifier from a child-directed app needs a real reason. The listing speaks to the parent: homework help for ages 11–17, a parent sets it up, and a parent approves the subscription. The child UI still shows no dollar price. Do not go under 11. Younger than that is a different reading level, a heavier Families review, and a weaker fit to homework this app already does. It is not an obvious extra sale. The privacy policy files still say teens 13–17 and not under 13. They stay that way until the audience release. Theme art of a young gamer or a blocky child can make Play read the audience as younger than the form says, which is another reason to declare 9–12 honestly instead of leaving the form at 13+ while the pictures look younger.
+- Audience stays teens 13–17. The owner considered 11 and kept 13 as the youngest. Play Console target groups stay Ages 13–15 and Ages 16–17 (https://support.google.com/googleplay/android-developer/answer/9867159). Do not select Ages 5 and under, Ages 6–8, or Ages 9–12. The privacy policy already says the app is for teens 13–17 and is not directed to children under 13. That sentence stays. Theme art and store screenshots have to match it. A blocky builder who reads as a young child, or copy aimed under 13, can make Play treat the declared audience as wrong (https://support.google.com/googleplay/android-developer/answer/9893335). The parent still approves any real-money price. The teen’s screen still shows no dollar amount. The listing can speak to the parent without lowering the age of the app.
 - Families monetization rules ban emotionally manipulative in-app purchase offers and require a visible difference between virtual currency and real money. Option A has to use that difference in copy. Option B has to go through Play Billing (https://support.google.com/googleplay/android-developer/answer/9858738) and a parent gate.
 - Data safety and the privacy policy, when the feature ships, need to mention on-device storage of the theme id, switch history, optional spiritual toggle, and (if option A ships) the same token ledger already described. They need a new sentence only if any of that leaves the device. The recommendation is that it does not. Mood and reflection text already stay in `daily_affirmations` on device; new notes should follow that pattern and, unlike today’s affirmation history, should use the same durable store as other preferences so Android clear-storage and export behave predictably. Moving the existing affirmation key is a behavior change and belongs in the implementation phase, with a migration of the old `localStorage` value.
 - This pull request does not edit the privacy policy, the store listing, keystores, or release config.
@@ -458,7 +458,7 @@ Before any implementation phase is called done:
 5. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
 6. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
 7. **Music shelves.** Study shelf and break shelf, remove DEF CON Radio, license check, copy pass. K-LOVE only after written permission, on its own parent-off shelf, not as Steady Light’s sound. No clinical claims. No new accounts.
-8. **Parent-gated tutor subscription and the age change.** Its own release, after the owner sets the monthly price and the included reply cap. That release updates Play Billing, the privacy policy, Data safety, and the Play target audience to 11–17 (groups 9–12, 13–15, and 16–17) together. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. The listing addresses the parent. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
+8. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, the privacy policy, and Data safety update in that release. The age line stays teens 13–17, and the Play target groups stay Ages 13–15 and Ages 16–17. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. The listing can address the parent. The child UI shows no dollar price. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
 
 Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
 
@@ -467,7 +467,7 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 1. **Gamer means today’s look.** Decided: yes. Freeze the daylight shell, neon game screens, and Focus Gamer.
 2. **Switch cadence.** Decided: yes. One free committed change per local week starting Monday, one free first choice that does not use that week, and a parent PIN override that does not use it either.
 3. **App price.** Decided in direction: $4.99 once is too cheap and will lose money. Choose one: (a) a parent-gated monthly tutor subscription, with the dollar amount and reply cap still open, optional cheaper-per-month annual plan, or (b) a one-time unlock priced above $4.99 plus IAP, where the IAP that funds the tutor is a monthly tutor pack and cosmetic IAP stays optional. Recommended default is (a), with extra theme switches still at 50 tokens. What monthly price and what included AI cap do you want?
-4. **Audience age.** Decided: 11–17, and not younger. The recommendation that goes with that choice: the parent is the buyer, so the listing speaks to the parent, and 11–12 is worth including because that is middle-school homework and the parent still approves the Play purchase. Stopping at 13 drops those families and leaves a young-looking app declared as if it were older. Going under 11 does not clearly sell more of this app. The live privacy policy stays 13–17 until the store release. Still open inside this decision: the monthly price and the AI cap in question 3, which have to be set before that release.
+4. **Audience age.** Decided: keep 13 as the youngest. The range stays teens 13–17, which is what the privacy policy already says. Play target groups stay Ages 13–15 and Ages 16–17. Ages 11–12 are not added. Art and screenshots stay consistent with that age, especially the later blocky theme.
 5. **Spiritual pack.** Decided: spiritual, not Christian. Public name Steady Light. Parent switch, default off. Cosmetic theme plus an optional quiet line. No scripture, no named deity, no homework-benefit claim. A Christian pack is not in this version. K-LOVE stays a separate permission problem, not this theme’s soundtrack.
 6. **Blocky art.** Who draws the original blocky companion, and is “blocky builder” an acceptable public name so the UI never says Roblox?
 7. **Clear-storage bypass.** Decided: do not create accounts. Clearing app storage may reset the switch limit. No server record.
