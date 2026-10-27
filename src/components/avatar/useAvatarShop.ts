@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AvatarItemType, AvatarState, ShopItem } from '@vibetech/avatars';
 import { dataStore } from '../../services/dataStore';
+import { commitSavedCompanion, statusSentence, suggestedThemeForAvatar, loadThemeProfile } from '../../services/themeProfile';
 import { DEFAULT_UNLOCKED_AVATAR_IDS, SHOP_ITEMS, normalizeAvatarId } from '../../services/avatarShopData';
 import { logger } from '../../utils/logger';
 
@@ -73,7 +74,26 @@ export function useAvatarShop({ userTokens, onSpendTokens, onPurchaseComplete }:
     const slot = SLOT_FOR_TYPE[item.type]; if (item.type === 'avatar' && !state.unlockedAvatars.includes(item.id)) return; if (slot !== 'selectedAvatarId' && !isOwned(item)) return;
     const next = slot === 'selectedAvatarId' ? { ...state, selectedAvatarId: item.id } : { ...state, equippedItems: { ...state.equippedItems, [slot]: state.equippedItems[slot] === item.id ? undefined : item.id } };
     operationRef.current = true; setBusy(true); setActionError(null);
-    try { await dataStore.saveAvatarState(next); setAvatarState(next); } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Avatar equipment could not be saved. Try again.'); }
+    try {
+      const previousAvatarId = state.selectedAvatarId;
+      if (slot === 'selectedAvatarId' && previousAvatarId && item.id !== previousAvatarId) {
+        const profile = await loadThemeProfile();
+        const suggested = suggestedThemeForAvatar(item.id);
+        const result = await commitSavedCompanion({
+          themeId: suggested ?? profile.activeThemeId,
+          fromAvatarId: previousAvatarId,
+          toAvatarId: item.id,
+          mode: 'auto',
+        });
+        if (!result.ok && result.reason !== 'unchanged') {
+          const latest = await loadThemeProfile();
+          setActionError(`${statusSentence(latest, new Date())} Gear stays free.`);
+          return;
+        }
+      }
+      await dataStore.saveAvatarState(next);
+      setAvatarState(next);
+    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Avatar equipment could not be saved. Try again.'); }
     finally { operationRef.current = false; setBusy(false); }
   }, [avatarState, blocked, busy, isOwned, loading]);
   return { avatarState, loading, blocked, busy, error: actionError, allItems: SHOP_ITEMS, lastPurchased, isOwned, isEquipped, canBuy, handleBuy, retryPendingPurchase, reload: load, handleEquip };

@@ -11,10 +11,11 @@ import { appStore } from '../../utils/electronStore';
 type BrainGymHubProps = ComponentProps<typeof SharedBrainGymHub> & {
   userName?: string;
   onUserNameSaved?: (name: string) => void;
+  onAskParent?: () => void;
 };
 
 export default function BrainGymHub(props: BrainGymHubProps) {
-  const { onEarnTokens, onGameCompleted, userName, onUserNameSaved, ...hubProps } = props;
+  const { onEarnTokens, onGameCompleted, userName, onUserNameSaved, onAskParent, ...hubProps } = props;
   const bridge = useMemo<GamesHostBridge>(
     () => ({
       loadConfig: <T,>(key: string) => appStore.get<T>(key) ?? undefined,
@@ -48,7 +49,11 @@ export default function BrainGymHub(props: BrainGymHubProps) {
           />
         )}
         renderAvatarShop={({ userTokens, onSpendTokens }) => (
-          <AvatarShopUnified userTokens={userTokens} onSpendTokens={onSpendTokens} />
+          <AvatarShopUnified
+            userTokens={userTokens}
+            onSpendTokens={onSpendTokens}
+            onAskParent={onAskParent}
+          />
         )}
       />
     </GamesHostBridgeProvider>

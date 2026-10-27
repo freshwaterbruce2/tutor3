@@ -1,5 +1,7 @@
 import { Heart, Plus, Sparkles, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useWellnessHub } from '../../hooks/useWellnessHub';
+import { getThemeSnapshot, loadThemeProfile, quietLineForDate, subscribeThemeProfile } from '../../services/themeProfile';
 import type { DailyAffirmationEntry } from '../../services/dailyAffirmations';
 import { THOUGHT_PATTERNS_INFO } from '../../services/cbtThoughtReframing';
 
@@ -37,6 +39,24 @@ const WellnessHub = () => {
     canSaveToday,
     canSubmitThought,
   } = useWellnessHub();
+  const [quietLine, setQuietLine] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sync = () => {
+      if (cancelled) return;
+      const profile = getThemeSnapshot();
+      setQuietLine(profile?.spiritualPackEnabled ? quietLineForDate(new Date()) : null);
+    };
+    void loadThemeProfile().then(sync).catch(() => {
+      if (!cancelled) setQuietLine(null);
+    });
+    const unsubscribe = subscribeThemeProfile(sync);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
@@ -58,6 +78,12 @@ const WellnessHub = () => {
         <p className="text-[var(--text-primary)] text-base leading-relaxed italic">
           "{affirmation.text}"
         </p>
+        {quietLine && (
+          <p className="text-sm text-[var(--text-secondary)]">
+            <span className="font-medium text-[var(--text-primary)]">Quiet line. </span>
+            {quietLine}
+          </p>
+        )}
 
         {affirmation.reflection && (
           <p className="text-sm text-[var(--text-secondary)]">💭 {affirmation.reflection}</p>

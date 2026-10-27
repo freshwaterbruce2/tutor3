@@ -30,6 +30,7 @@ import {
 } from './services/gameProgression';
 import { useTokenEconomy } from './hooks/useTokenEconomy';
 import { initializeTokenLedger } from './services/tokenService';
+import { commitSavedCompanion, ensureThemeProfile, existingInstallSignals, suggestedThemeForAvatar, loadThemeProfile } from './services/themeProfile';
 import {
   getRecoverableCompletionDeliveries,
   markCompletionDeliveryLegSettled,
@@ -221,6 +222,16 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
           );
           if (!awarded) throw new Error('Welcome award could not be saved');
           await dataStore.saveUserSettings('onboarding_completed', 'true');
+          const themeProfile = await loadThemeProfile();
+          if (themeProfile.freeSelectionAvailable) {
+            const suggested = suggestedThemeForAvatar(selectedAvatarId);
+            await commitSavedCompanion({
+              themeId: suggested ?? themeProfile.activeThemeId,
+              fromAvatarId: existingAvatarState?.selectedAvatarId ?? selectedAvatarId,
+              toAvatarId: selectedAvatarId,
+              mode: 'auto',
+            });
+          }
           setOnboardingFlags((prev) => ({
             ...prev,
             hasCompletedFirstRun: true,
@@ -814,6 +825,8 @@ const App = () => {
       try {
         setPersistenceStartup('loading');
         await dataStore.initialize();
+        const hasDurableInstall = await existingInstallSignals();
+        await ensureThemeProfile(hasDurableInstall);
         await initializeTokenLedger();
         await appIntegration.initialize();
         const sensoryPreferences = await loadSensoryPreferences();

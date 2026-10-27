@@ -580,6 +580,7 @@ export function AppViewRenderer({
                 onClose={() => setView('cards')}
                 userName={userName}
                 onUserNameSaved={onUserNameSaved}
+                onAskParent={() => setView('parent')}
               />
             </div>
           </RouteErrorBoundary>
@@ -605,6 +606,7 @@ export function AppViewRenderer({
                 }
               }}
               onClose={() => setView('dashboard')}
+              onAskParent={() => setView('parent')}
             />
           </RouteErrorBoundary>
         );

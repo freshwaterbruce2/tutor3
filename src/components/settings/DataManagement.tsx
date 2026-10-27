@@ -14,6 +14,7 @@ import {
     requireValidSensoryPreferences,
 } from '../../services/sensoryPreferences';
 import { soundEffects } from '../../services/soundEffects';
+import { exportThemeProfile, importThemeProfile } from '../../services/themeProfile';
 import { logger } from '../../utils/logger';
 import PrivacyPolicy from './PrivacyPolicy';
 
@@ -104,6 +105,11 @@ const DataManagement = () => {
                     data['sensory-prefs'] = sensoryPrefs;
                 }
 
+                const themeProfile = exportThemeProfile();
+                if (themeProfile) {
+                    data['theme_profile_v1'] = themeProfile;
+                }
+
                 const jsonString = JSON.stringify(data, null, 2);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -175,6 +181,10 @@ const DataManagement = () => {
                             await dataStore.saveRewards(data.parentRewards);
                         }
 
+                        if (Object.hasOwn(data, 'theme_profile_v1')) {
+                            await importThemeProfile(data['theme_profile_v1']);
+                        }
+
                         if (data.focusSessions && Array.isArray(data.focusSessions)) {
                             for (const session of data.focusSessions) {
                                 await dataStore.saveFocusSession(session);
@@ -200,7 +210,7 @@ const DataManagement = () => {
 
     const handleReset = () => {
         const confirmed = window.confirm(
-            'Reset App clears homework, achievements, points, rewards, and sensory settings. It does not clear chat history, schedules, learning statistics, or the installation identifier. This action cannot be undone.'
+            'Reset App clears homework, achievements, points, rewards, and sensory settings. It keeps chat history, schedules, learning statistics, the installation identifier, the token ledger, your avatar, your companion theme, switch history, and the Steady Light switch. This action cannot be undone.'
         );
         if (confirmed) {
             startTransition(async () => {

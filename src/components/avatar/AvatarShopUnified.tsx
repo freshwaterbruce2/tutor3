@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ShopItem } from '@vibetech/avatars';
 import { AvatarImage } from '@vibetech/avatars';
 import { AvatarPreview } from './AvatarPreview';
+import { CompanionLook } from './CompanionLook';
 import { type AvatarPurchaseOperationId, useAvatarShop } from './useAvatarShop';
 
 type TabId = 'Characters' | 'Hats' | 'Shirts' | 'Accessories' | 'Frames' | 'Badges' | 'Backgrounds';
@@ -115,6 +116,7 @@ interface AvatarShopUnifiedProps {
   onSpendTokens: (amount: number, reason: string, operationId: string) => Promise<boolean>;
   onPurchaseComplete?: (operationId: AvatarPurchaseOperationId) => unknown | Promise<unknown>;
   onClose?: () => void;
+  onAskParent?: () => void;
 }
 
 export function AvatarShopUnified({
@@ -122,6 +124,7 @@ export function AvatarShopUnified({
   onSpendTokens,
   onPurchaseComplete,
   onClose,
+  onAskParent,
 }: AvatarShopUnifiedProps) {
   const [activeTab, setActiveTab] = useState<TabId>('Characters');
   const { avatarState, loading, blocked, busy, error, allItems, lastPurchased, isOwned, isEquipped, canBuy, handleBuy, retryPendingPurchase, reload, handleEquip } =
@@ -177,8 +180,14 @@ export function AvatarShopUnified({
         </div>
       </div>
 
-      {/* Item grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {avatarState?.selectedAvatarId && onAskParent && (
+          <CompanionLook
+            avatarId={avatarState.selectedAvatarId}
+            userTokens={userTokens}
+            onAskParent={onAskParent}
+          />
+        )}
         {loading ? (
           <p className="text-center text-[var(--text-secondary)] py-16" role="status">Loading avatar shop…</p>
         ) : blocked ? (
