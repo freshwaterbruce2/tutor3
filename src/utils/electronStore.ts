@@ -34,6 +34,11 @@ export interface AppStore {
   setStrict<T = string>(key: string, value: T): void;
   remove(key: string): void;
   delete(key: string): void;
+  /**
+   * Like `delete`, but propagates a failure so the caller can offer a retry.
+   * `delete` reports the failure and continues.
+   */
+  deleteStrict(key: string): void;
 }
 
 export interface StorageFailureSnapshot {
@@ -41,6 +46,10 @@ export interface StorageFailureSnapshot {
   store: 'persistent' | 'session';
   operation: 'read' | 'write' | 'delete';
   reason: 'quota' | 'unavailable';
+  /** User-facing explanation when a screen is handling this failure. */
+  detail?: string;
+  /** Re-runs the save or read that failed. */
+  retry?: () => void;
 }
 
 type StorageFailureListener = () => void;
@@ -58,12 +67,7 @@ export function subscribeToStorageFailures(listener: StorageFailureListener): ()
   return () => storageFailureListeners.delete(listener);
 }
 
-function reportStorageFailure(
-  store: StorageFailureSnapshot['store'],
-  operation: StorageFailureSnapshot['operation'],
-  reason: StorageFailureSnapshot['reason'],
-): void {
-  latestStorageFailure = { id: ++nextStorageFailureId, store, operation, reason };
+function emitStorageFailure(): void {
   for (const listener of storageFailureListeners) {
     try {
       listener();
@@ -71,6 +75,72 @@ function reportStorageFailure(
       // A subscriber must not interfere with storage or other subscribers.
     }
   }
+}
+
+function reportStorageFailure(
+  store: StorageFailureSnapshot['store'],
+  operation: StorageFailureSnapshot['operation'],
+  reason: StorageFailureSnapshot['reason'],
+): void {
+  // Keep a notice the user can retry. A later incidental failure should not
+  // replace it with a generic message that has no retry.
+  if (latestStorageFailure?.retry) return;
+  latestStorageFailure = { id: ++nextStorageFailureId, store, operation, reason };
+  emitStorageFailure();
+}
+
+/** Log a storage failure without re-entering storage when the disk is full. */
+export function logStorageFailure(message: string, error: unknown): void {
+  if (isQuotaExceededError(error)) {
+    console.error(`[ERROR] ${message}`, error);
+    return;
+  }
+  logger.error(message, error);
+}
+
+export interface StorageFailureNotice {
+  store?: StorageFailureSnapshot['store'];
+  operation: StorageFailureSnapshot['operation'];
+  reason?: StorageFailureSnapshot['reason'];
+  detail: string;
+  retry: () => void;
+}
+
+/** Publish a storage failure the UI can explain and retry. Replaces the latest notice. */
+export function presentStorageFailure(notice: StorageFailureNotice): number {
+  const id = ++nextStorageFailureId;
+  latestStorageFailure = {
+    id,
+    store: notice.store ?? 'persistent',
+    operation: notice.operation,
+    reason: notice.reason ?? 'unavailable',
+    detail: notice.detail,
+    retry: notice.retry,
+  };
+  emitStorageFailure();
+  return id;
+}
+
+/** Hide a notice only when it is still the one on screen. */
+export function clearStorageFailure(id: number): void {
+  if (latestStorageFailure?.id !== id) return;
+  latestStorageFailure = null;
+  emitStorageFailure();
+}
+
+/** Put a notice back after a later attempt replaced it. */
+export function restoreStorageFailure(snapshot: StorageFailureSnapshot | null): void {
+  latestStorageFailure = snapshot;
+  emitStorageFailure();
+}
+
+/**
+ * `appStore` JSON-decodes stored text. Callers that parse again throw on a
+ * valid object. Accept either the decoded value or a JSON string.
+ */
+export function decodeStoredJson(raw: unknown): unknown {
+  if (typeof raw !== 'string') return raw;
+  return JSON.parse(raw);
 }
 
 /**
@@ -85,7 +155,7 @@ function isRealElectron(): boolean {
  * Standard: DOMException named 'QuotaExceededError' (legacy code 22).
  * Firefox legacy: 'NS_ERROR_DOM_QUOTA_REACHED' (code 1014).
  */
-function isQuotaExceededError(error: unknown): boolean {
+export function isQuotaExceededError(error: unknown): boolean {
   return (
     error instanceof DOMException &&
     (error.name === 'QuotaExceededError' ||
@@ -185,6 +255,15 @@ export const appStore: AppStore = {
   delete(key: string): void {
     this.remove(key);
   },
+
+  deleteStrict(key: string): void {
+    try {
+      requireBridgeMethod('delete')(key);
+    } catch (error) {
+      reportStorageFailure('persistent', 'delete', 'unavailable');
+      throw error instanceof Error ? error : new Error('Persistent storage delete failed');
+    }
+  },
 };
 
 /**
@@ -276,6 +355,16 @@ export const sessionStore: AppStore = {
 
   delete(key: string): void {
     this.remove(key);
+  },
+
+  deleteStrict(key: string): void {
+    try {
+      if (isRealElectron()) requireBridgeMethod('delete')(`session_${key}`);
+      else sessionStorage.removeItem(key);
+    } catch (error) {
+      reportStorageFailure('session', 'delete', 'unavailable');
+      throw error instanceof Error ? error : new Error('Session storage delete failed');
+    }
   },
 };
 

@@ -17,7 +17,16 @@ import { triggerVibration } from '../../services/uiService';
 import { isSoundFeedbackEnabled } from '../../services/sensoryPreferences';
 import { prepareFocusCompletionDelivery } from '../../services/completionDeliveryService';
 import { dataStore } from '../../services/dataStore';
-import { appStore } from '../../utils/electronStore';
+import {
+  appStore,
+  clearStorageFailure,
+  decodeStoredJson,
+  getStorageFailureSnapshot,
+  isQuotaExceededError,
+  logStorageFailure,
+  restoreStorageFailure,
+  type StorageFailureSnapshot,
+} from '../../utils/electronStore';
 import { logger } from '../../utils/logger';
 import type { FocusSession, HomeworkItem, HomeworkStep } from '../../types';
 
@@ -32,6 +41,39 @@ interface PersistedTimerState {
   sessionStartMs: number | null;
   assignmentId?: string;
   stepId?: string;
+}
+
+function parsePersistedTimer(raw: unknown): PersistedTimerState | null {
+  const decoded = decodeStoredJson(raw);
+  if (!decoded || typeof decoded !== 'object') return null;
+  const parsed = decoded as PersistedTimerState;
+  if (typeof parsed.durationMinutes !== 'number' || !Number.isFinite(parsed.durationMinutes)) return null;
+  return parsed;
+}
+
+function focusTimerWriteNotice(error: unknown): { detail: string; hint: string } {
+  if (isQuotaExceededError(error)) {
+    return {
+      detail: 'The focus timer could not be saved because device storage is full.',
+      hint: 'Free up space on this device, then retry.',
+    };
+  }
+  return {
+    detail: 'The focus timer could not be saved on this device.',
+    hint: 'Check your storage, then retry.',
+  };
+}
+
+const TIMER_READ_NOTICE = {
+  detail: 'The saved focus timer could not be opened.',
+  hint: 'Check your storage, then retry.',
+} as const;
+
+function releaseStorageAttempt(previous: StorageFailureSnapshot | null): void {
+  const latest = getStorageFailureSnapshot();
+  if (previous && latest?.id === previous.id) return;
+  if (latest) clearStorageFailure(latest.id);
+  if (previous) restoreStorageFailure(previous);
 }
 
 const generateFocusSessionId = (): string => {
@@ -93,53 +135,26 @@ const FocusTimer = ({
 
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [timerStorageNotice, setTimerStorageNotice] = useState<{
+    detail: string;
+    hint: string;
+    retry: () => void;
+  } | null>(null);
 
   const targetEndMsRef = useRef<number | null>(null);
   const sessionStartMsRef = useRef<number | null>(null);
-
-  // Hydrate saved timer state on mount so navigating or refreshing preserves the timer
-  useEffect(() => {
-    try {
-      const raw = appStore.get(TIMER_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as PersistedTimerState;
-        if (parsed && typeof parsed.durationMinutes === 'number') {
-          setMode(parsed.mode ?? 'focus');
-          setDurationMinutes(parsed.durationMinutes);
-          setCustomMinutesInput(String(parsed.durationMinutes));
-          sessionStartMsRef.current = parsed.sessionStartMs;
-
-          if (parsed.isRunning && parsed.targetEndMs) {
-            const diffSec = Math.max(0, Math.ceil((parsed.targetEndMs - Date.now()) / 1000));
-            if (diffSec > 0) {
-              targetEndMsRef.current = parsed.targetEndMs;
-              setRemainingSeconds(diffSec);
-              setIsRunning(true);
-              setHasStartedOnce(true);
-            } else {
-              setRemainingSeconds(0);
-              setIsRunning(false);
-              setHasStartedOnce(true);
-              if (parsed.mode === 'focus') {
-                setShowCompletionPrompt(true);
-              }
-            }
-          } else {
-            setRemainingSeconds(
-              typeof parsed.remainingSeconds === 'number' && parsed.remainingSeconds > 0
-                ? parsed.remainingSeconds
-                : parsed.durationMinutes * 60,
-            );
-            setIsRunning(false);
-            setHasStartedOnce(parsed.remainingSeconds < parsed.durationMinutes * 60);
-          }
-          return;
-        }
-      }
-    } catch (e) {
-      logger.error('Failed to restore focus timer state:', e);
-    }
-  }, []);
+  const mountedRef = useRef(false);
+  const persistStateRef = useRef<
+    (
+      nextMode: 'focus' | 'break',
+      nextDuration: number,
+      nextRemaining: number,
+      nextRunning: boolean,
+      nextTargetEnd: number | null,
+      nextStartMs: number | null,
+    ) => void
+  >(() => {});
+  const restoreTimerRef = useRef<() => void>(() => {});
 
   // Update duration when user launches a new step from Today and timer hasn't started
   useEffect(() => {
@@ -160,24 +175,102 @@ const FocusTimer = ({
       nextTargetEnd: number | null,
       nextStartMs: number | null,
     ) => {
+      const state: PersistedTimerState = {
+        mode: nextMode,
+        durationMinutes: nextDuration,
+        remainingSeconds: nextRemaining,
+        isRunning: nextRunning,
+        targetEndMs: nextTargetEnd,
+        sessionStartMs: nextStartMs,
+        assignmentId: activeAssignment?.id,
+        stepId: activeStep?.id,
+      };
+      const previousFailure = getStorageFailureSnapshot();
       try {
-        const state: PersistedTimerState = {
-          mode: nextMode,
-          durationMinutes: nextDuration,
-          remainingSeconds: nextRemaining,
-          isRunning: nextRunning,
-          targetEndMs: nextTargetEnd,
-          sessionStartMs: nextStartMs,
-          assignmentId: activeAssignment?.id,
-          stepId: activeStep?.id,
-        };
-        appStore.set(TIMER_STORAGE_KEY, JSON.stringify(state));
-      } catch {
-        // Ignore storage write error
+        appStore.setStrict(TIMER_STORAGE_KEY, state);
+        setTimerStorageNotice(null);
+      } catch (error) {
+        logStorageFailure('Failed to save focus timer state:', error);
+        releaseStorageAttempt(previousFailure);
+        const notice = focusTimerWriteNotice(error);
+        setTimerStorageNotice({
+          detail: notice.detail,
+          hint: notice.hint,
+          retry: () =>
+            persistStateRef.current(
+              nextMode,
+              nextDuration,
+              nextRemaining,
+              nextRunning,
+              nextTargetEnd,
+              nextStartMs,
+            ),
+        });
       }
     },
     [activeAssignment?.id, activeStep?.id],
   );
+  persistStateRef.current = persistState;
+
+  const restoreTimer = useCallback(() => {
+    const previousFailure = getStorageFailureSnapshot();
+    try {
+      const raw = appStore.getStrict<unknown>(TIMER_STORAGE_KEY);
+      if (raw == null || raw === '') {
+        setTimerStorageNotice(null);
+        return;
+      }
+      const parsed = parsePersistedTimer(raw);
+      if (!parsed) throw new Error('Focus timer state is unreadable');
+      if (!mountedRef.current) return;
+
+      setMode(parsed.mode ?? 'focus');
+      setDurationMinutes(parsed.durationMinutes);
+      setCustomMinutesInput(String(parsed.durationMinutes));
+      sessionStartMsRef.current = parsed.sessionStartMs ?? null;
+
+      if (parsed.isRunning && parsed.targetEndMs) {
+        const diffSec = Math.max(0, Math.ceil((parsed.targetEndMs - Date.now()) / 1000));
+        if (diffSec > 0) {
+          targetEndMsRef.current = parsed.targetEndMs;
+          setRemainingSeconds(diffSec);
+          setIsRunning(true);
+          setHasStartedOnce(true);
+        } else {
+          setRemainingSeconds(0);
+          setIsRunning(false);
+          setHasStartedOnce(true);
+          if (parsed.mode === 'focus') setShowCompletionPrompt(true);
+        }
+      } else {
+        setRemainingSeconds(
+          typeof parsed.remainingSeconds === 'number' && parsed.remainingSeconds > 0
+            ? parsed.remainingSeconds
+            : parsed.durationMinutes * 60,
+        );
+        setIsRunning(false);
+        setHasStartedOnce(parsed.remainingSeconds < parsed.durationMinutes * 60);
+      }
+      setTimerStorageNotice(null);
+    } catch (error) {
+      logStorageFailure('Failed to restore focus timer state:', error);
+      releaseStorageAttempt(previousFailure);
+      setTimerStorageNotice({
+        detail: TIMER_READ_NOTICE.detail,
+        hint: TIMER_READ_NOTICE.hint,
+        retry: () => restoreTimerRef.current(),
+      });
+    }
+  }, []);
+  restoreTimerRef.current = restoreTimer;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    restoreTimer();
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [restoreTimer]);
 
   useEffect(() => {
     const loadSessions = async () => {
@@ -513,6 +606,23 @@ const FocusTimer = ({
             >
               <Coffee className="w-3.5 h-3.5" />
               <span>Take 5m break</span>
+            </button>
+          </div>
+        )}
+
+        {timerStorageNotice && (
+          <div
+            role="alert"
+            className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
+          >
+            <p className="text-sm font-semibold">{timerStorageNotice.detail}</p>
+            <p className="mt-1 text-xs text-amber-800">{timerStorageNotice.hint}</p>
+            <button
+              type="button"
+              onClick={timerStorageNotice.retry}
+              className="mt-3 rounded-lg bg-[#0F766E] px-3 py-1.5 text-sm font-semibold text-white"
+            >
+              Retry
             </button>
           </div>
         )}
