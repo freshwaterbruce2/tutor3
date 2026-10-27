@@ -4,6 +4,12 @@ This document is the plan and safe groundwork for letting a child pick a compani
 
 This pull request adds this document only. It does not change theme rendering, avatars, onboarding, music, tokens, rewards, purchases, storage, or store-listing copy. After it merges, the app should behave the same as it does now.
 
+Owner decisions recorded on 2026-10-27:
+
+- **Gamer theme** means freeze the product as it renders today: daylight shell, neon game screens, Focus Gamer. Do not repaint the shell neon from the unused `roblox-gaming` config.
+- **Switch limit** is one free committed change per local week starting Monday, plus one free first choice that does not use that week, plus a parent PIN override that does not use it either.
+- **App price.** A $4.99 one-time fee for the app is too low and will lose money. The owner wants either a subscription with a lower entry price, or the one-time purchase kept and paired with in-app purchases. Section 4 compares those and recommends a parent-gated subscription for the cloud tutor, with token spending and optional IAP kept separate from that bill. No price is implemented in this pull request. The repo still has no Play Billing product.
+
 ## 1. What exists today
 
 There is no theme picker, no theme id in saved data, and no code that sets `data-theme`. Color, avatar, and “gamer” identity are three separate things that happen to ship together.
@@ -264,9 +270,39 @@ This app does not sell anything for money. There is no billing library, no in-ap
 
 Tokens for the child who has earned them, and a parent-paid Play product that grants the same credit. This needs every control from A and every billing, disclosure, and parental-gate control from B. It is the largest policy surface, and it is easy to get the two prices confused on one screen.
 
-### Recommendation
+### Recommendation for switches
 
-Ship **option A only**, behind the weekly free change and the parent override, so a child who never spends tokens still gets a companion and still gets one change a week. Leave the price and the credit cap as owner decisions, with 50 tokens and a cap of 2 as the proposed numbers. Revisit real money only in its own release, after the owner accepts Play Billing, a parent-only price screen, and a privacy-policy update. Do not put a cash price in the child UI in the first version.
+Extra companion changes stay on **tokens** (50 tokens, cap of 2 unused credits) plus the weekly free change and the parent PIN override. A cash price for a theme switch is a poor way to fund the app: families will not buy switches often enough to cover the tutor, and a child-facing price for a face they love is the manipulative case the Families rules call out.
+
+### App price: subscription or one-time plus IAP
+
+The client does not contain a $4.99 product. Play Billing is not integrated. The cloud tutor is the cost that continues after install. `gatewayAdapter.ts` allows **30 AI replies a day and 200 a month** per installation. Homework, focus, games, the token shop, and the on-device study model do not use that meter. A one-time $4.99 unlock would pay once and then keep serving that allowance every month. That is the loss the owner is pointing at.
+
+**Subscription, lower entry (recommended).**
+
+Sell the cloud tutor as a Play subscription that a parent starts. The entry price is a monthly fee, lower than a corrected lifetime price would have to be, because it is charged again each period. An optional annual plan can cost less per month than twelve monthly payments. The price and the included allowance (whether 200/month stays the paid cap, or the paid plan raises it) are still owner numbers. This plan does not pick a dollar amount.
+
+What stays free without the subscription: the homework list, focus timer, games, token earning and spending, parent rewards, and companion themes including the weekly free change. Stored homework remains on the device if the subscription lapses. The paid thing is more cloud tutor time, not the child’s companion and not the token balance.
+
+The parent sees the price, the billing period, that it renews, and that cancellation is in Google Play, before the Play sheet opens. The existing Parent Zone PIN is that gate. Play family purchase approval is a second gate only when the device is in a family with approvals on, so the PIN still comes first. There is no trial a child can start. If a trial exists, the parent starts it on that same screen, and the price after the trial is written there. The child UI can say the tutor needs a parent to turn on more replies. It does not show a dollar figure, a countdown, or a sad avatar.
+
+**One-time purchase plus IAP (the other option the owner named).**
+
+“Keep the same” means keep a single paid unlock, then add in-app products. $4.99 is the price the owner already considers too low, so a one-time unlock that includes ongoing AI would need a higher price, and heavy months could still cost more than that single payment. Cosmetic IAP (extra theme switches, art packs) will not reliably cover the API. The IAP that would cover it is a time-boxed tutor pack, for example “tutor replies for this month,” which is a subscription with worse wording.
+
+If this option is chosen anyway:
+
+- The one-time product unlocks the non-AI app, or it is priced high enough that the owner accepts leftover AI risk. It does not include unlimited months of the 200-reply allowance at $4.99.
+- Tutor access is a subscription or a monthly consumable, parent-gated, separate from the one-time price.
+- Extra theme switches can be a second, optional consumable IAP, also parent-gated, and also available for 50 tokens so a child is not pushed at a cash button.
+- The screen that shows both a dollar unlock and a token price has to say which number is real money and which is the in-app token balance. Families policy requires that distinction.
+
+**What neither option may do.**
+
+- Change earn amounts, shop prices, ledger keys, or parent reward costs. Real money does not add tokens unless a later, explicit decision says a parent can buy a token pack. That pack is not in this recommendation, because selling tokens to children is a separate Families risk.
+- Put the price, the renewal, or “you will lose your companion” on the child side of the PIN.
+- Turn off homework the family already saved when a payment fails.
+- Ship billing in the theme pull requests. Billing is its own release, with Play Billing, Data safety, the privacy policy, and a store-listing note that the app now offers a subscription or IAP.
 
 This plan does not change economy code or purchase code.
 
@@ -365,18 +401,18 @@ Before any implementation phase is called done:
 1. **This pull request.** Plan only.
 2. **Profile and gamer snapshot.** Add the profile type, the migration that writes `gamer` for existing data, and `data-companion-theme=gamer` pointing at the current CSS variables. No new colors, no picker, no spend. Existing and new installs still look the same, because positivity is not applied yet. Tests from section 3.4 that cover migration only.
 3. **Positivity for empty installs.** New palette, new notes module with the spiritual toggle defaulting off, empty-install default. Existing profiles stay gamer. Picker can show both themes. Weekly limit and initial-choice rule turn on here.
-4. **Token credit.** Option A, price confirmed by the owner, pending-intent flow, cap. Still no Play Billing.
+4. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
 5. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
 6. **Music shelves.** Relabel and regroup stations, license check, copy pass. No clinical claims.
-7. **Optional later.** Real-money credit, only if the owner accepts section 4 option B. Server-side switch record, only if the owner accepts the privacy cost in section 3.3.
+7. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, privacy policy, and Data safety update in that release. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. Server-side switch record only if the owner accepts the privacy cost in section 3.3.
 
 Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
 
 ## 10. Open questions for the owner
 
-1. **Gamer means today’s look.** The shell is the calm daylight palette, and Brain Gym is still neon. The unused `roblox-gaming` config is not on screen. Confirm that “keep the gamer theme” means freeze this rendered product, Focus Gamer included, rather than painting the shell neon again.
-2. **Switch cadence.** Recommended default: one free committed change per local week (Monday), plus one free initial choice that does not use that week, plus a parent PIN override that does not use it either. Is Monday the right boundary, and is one the right number?
-3. **Extra switches.** Recommended default: token spend only, at 50 tokens, maximum 2 unused credits, no real-money product. What price do you want, and do you want a Play Billing product at all?
+1. **Gamer means today’s look.** Decided: yes. Freeze the daylight shell, neon game screens, and Focus Gamer.
+2. **Switch cadence.** Decided: yes. One free committed change per local week starting Monday, one free first choice that does not use that week, and a parent PIN override that does not use it either.
+3. **App price.** Decided in direction: $4.99 once is too cheap and will lose money. Choose one: (a) a parent-gated monthly tutor subscription, with the dollar amount and reply cap still open, optional cheaper-per-month annual plan, or (b) a one-time unlock priced above $4.99 plus IAP, where the IAP that funds the tutor is a monthly tutor pack and cosmetic IAP stays optional. Recommended default is (a), with extra theme switches still at 50 tokens. What monthly price and what included AI cap do you want?
 4. **Audience age.** The privacy policy says 13–17 and not under 13. The product is described as for kids and teens. Which ages should the new copy and the Play target audience use? Younger ages change Families rules, spiritual copy, and music lyrics.
 5. **Spiritual toggle.** Recommended default: off, non-denominational, no scripture, parent-controlled. Do you want a specifically Christian pack later, kept separate from the default?
 6. **Blocky art.** Who draws the original blocky companion, and is “blocky builder” an acceptable public name so the UI never says Roblox?
