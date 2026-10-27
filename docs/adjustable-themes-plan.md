@@ -2,7 +2,7 @@
 
 This document is the plan and safe groundwork for letting a child pick a companion avatar that brings its own visual theme, while a new positivity theme becomes the default for new installs only. It records how the app works today, the proposed design, music evidence, policy risks, and the checks a later implementation must pass.
 
-This pull request adds this document only. It does not change theme rendering, avatars, onboarding, music, tokens, rewards, purchases, storage, or store-listing copy. After it merges, the app should behave the same as it does now.
+This pull request adds this document and one music change that the research and the owner’s decisions already settled: the radio is split into “While you study” and “For a break,” and DEF CON Radio is removed. It does not change theme rendering, avatars, onboarding, tokens, rewards, purchases, storage, or store-listing copy.
 
 Owner decisions recorded on 2026-10-27:
 
@@ -10,10 +10,10 @@ Owner decisions recorded on 2026-10-27:
 - **Switch limit** is one free committed change per local week starting Monday, plus one free first choice that does not use that week, plus a parent PIN override that does not use it either.
 - **App price.** A $4.99 one-time fee for the app is too low and will lose money. The owner wants either a subscription with a lower entry price, or the one-time purchase kept and paired with in-app purchases. Section 4 compares those and recommends a parent-gated subscription for the cloud tutor, with token spending and optional IAP kept separate from that bill. No price is implemented in this pull request. The repo still has no Play Billing product.
 - **No accounts.** Do not create accounts to enforce the switch limit. Clearing app storage may reset that limit. That tradeoff is accepted.
-- **Music shelves.** Yes to a study shelf and a break shelf, and yes to removing DEF CON Radio. Where the studies disagree, the player offers a choice and does not claim a station is proven to help. K-LOVE is wanted and is blocked until Educational Media Foundation gives written permission. It is not the sound of the spiritual theme.
+- **Music shelves.** Done in the player. “While you study” is the quieter, mostly instrumental list. “For a break” holds the louder stations and the stations with words. DEF CON Radio is removed. A teen can play either list. No station is labeled as treatment. K-LOVE stays out until Educational Media Foundation gives written permission, and it is not the sound of the spiritual theme.
 - **Themes are cosmetic.** A positivity theme changes colors, backgrounds, and other UI chrome. It does not add, remove, or replace features. Wellness, music, homework, games, and the token shop stay available on every theme.
 - **Reset copy.** Yes. When the switch profile ships, the Reset App confirmation is updated so it matches what Reset actually clears and what it keeps.
-- **Audience.** Youngest age stays 13. The range stays teens 13–17, matching the privacy policy already published. Do not add ages 11–12. Play target groups stay Ages 13–15 and Ages 16–17.
+- **Audience.** Youngest age stays 13. That matches the privacy policy and the Play / COPPA best practice for an app that is not built for children under 13. Do not add ages 11–12. Play target groups stay Ages 13–15 and Ages 16–17. Store art has to match that age.
 - **Spiritual pack.** Prefer spiritual, not a Christian pack. One parent switch, default off, public name Steady Light. It adds a cosmetic theme and an optional quiet line. It does not change features, earning, or which theme a new install starts on. No scripture, no named deity, and no claim that it improves homework.
 
 ## 1. What exists today
@@ -64,17 +64,14 @@ The file header calls this a “research-based CBT technique” that “reduces 
 
 The Music screen is a radio picker only (`src/components/features/MusicLibrary`). Curated downloads are gone; `curatedMusicData.ts` says so (updated 2026-02-17). `CuratedTrack` in `src/types.ts` still lists categories `anime | christian | lofi | classical`, and `MusicPlaylist` still allows Spotify and YouTube shapes, but the screen does not render them.
 
-Live stations in `RADIO_STATIONS`:
+Live stations in `RADIO_STATIONS`, in shelf order:
 
-| Category | Stations |
+| Shelf | Stations |
 | --- | --- |
-| Anime | LISTEN.moe |
-| EDM | SomaFM Beat Blender, SomaFM DEF CON Radio |
-| Ambient | SomaFM Drone Zone, SomaFM Space Station |
-| Classical | WQXR |
-| Chill | SomaFM Groove Salad, SomaFM Cliq Hop |
-| Gaming | SomaFM Sonic Universe |
-| Variety | SomaFM Indie Pop Rocks, SomaFM Underground 80s |
+| While you study | SomaFM Groove Salad, SomaFM Space Station, WQXR, SomaFM Sonic Universe, SomaFM Drone Zone |
+| For a break | SomaFM Beat Blender, SomaFM Indie Pop Rocks, SomaFM Underground 80s, LISTEN.moe, SomaFM Cliq Hop |
+
+DEF CON Radio is not in the list. The same stream hosts are used. No station was added.
 
 Playback goes from the device straight to the stream host (`audioStreamService`). The privacy policy already says SomaFM, LISTEN.moe, and WQXR receive the device IP, and that Vibe Tutor does not see listening activity. The sensory `soundEnabled` flag gates app sound effects; it is a separate switch from the radio player.
 
@@ -212,10 +209,10 @@ Palette, all original CSS, no stock “heaven” photo:
 | Page | `#F3EDE3` | Warm paper, not stark white |
 | Card | `#FFF9F2` | Same cards as the other themes, this fill only |
 | Primary | `#3E5C50` | Sage for buttons and links |
-| Secondary | `#C4A36A` | Soft gold for a selected pill and the token icon only, never a large fill |
-| Text | `#2A2622` | Warm near-black |
+| Secondary | `#7A5C28` | Gold for a selected pill and the token icon only, never a large fill. White text on this gold. The lighter gold `#C4A36A` fails contrast on the paper background (about 2.3:1) |
+| Text | `#2A2622` | Warm near-black. About 12.9:1 on the page and 14.4:1 on the card |
 | Border | `#E4D8C8` | Hairline |
-| Token color | `#8A6A32` | Same balance, new paint |
+| Token color | `#7A5C28` | Same balance, new paint. About 5.3:1 on the page, which clears WCAG 2.2 AA for normal text (4.5:1) |
 
 The page background is a low horizon and a soft wash of light at the top, drawn in CSS. No cross, dove, halo, angel, stained glass, or denomination mark. Corners and type stay the app’s current ones, so the screen does not change shape. No pulsing glow. Sensory high-contrast, warm, and cool still override these colors. Game screens keep their current classes until the shared-token phase; after that, Steady Light uses this sage and gold instead of purple neon.
 
@@ -389,7 +386,7 @@ Before a line is marked `approved`:
 
 ## 6. Music findings
 
-The current list is a hobby-radio mix: anime, several SomaFM electronic and ambient channels, one classical station, one “gaming” station that is actually a sci-fi soundtrack channel, and indie/80s variety. That overlaps some real teen tastes (electronic, pop-adjacent indie, anime) and misses others that surveys put at the top (pop, hip-hop/rap, R&B). It also presents every station as equal, with no split between “music while reading” and “music for a break,” and with no warning on streams that can be lyrically dense or sonically harsh (DEF CON Radio’s identity is a hacker-conference brand; Drone Zone is a low, continuous texture that some listeners like and some find unsettling).
+Before this change the list was a hobby-radio mix: anime, several SomaFM electronic and ambient channels, one classical station, one soundtrack station, indie and 80s variety, and DEF CON Radio. That overlapped some teen tastes and missed pop and hip-hop. It also presented every station as equal. DEF CON Radio is now gone. The screen is two shelves. Pop and hip-hop are still missing until a stream with usable terms exists. Drone Zone stays on the study shelf, last, because it is instrumental and some listeners find the low texture unsettling.
 
 What the sources support, and where they stop:
 
@@ -406,12 +403,19 @@ What the sources support, and where they stop:
 
 K-LOVE is Positive Encouraging K-LOVE, a Christian contemporary network from Educational Media Foundation, with an official app (`com.emf.klove`) and site streams such as the main feed, Eras, Future Hits, and POP!. Their terms say site content is for personal, non-commercial use and that it may not be copied, transmitted, or distributed without K-LOVE’s express prior written consent (https://release.klove.com/policies/terms-of-use). Playing `listen.klove.com` inside this app is that kind of transmission. This plan does not add the stream, the logo, or the wordmark. The music phase can ask EMF in writing for permission to name the station and to play a specific stream URL. Until that letter exists, the app can tell a parent the official app exists and must not open the stream itself. K-LOVE is lyric-heavy Christian pop and worship. The owner asked for a spiritual pack, not a Christian one, and the studies in this section do not show that this station helps homework. If permission arrives, the stream can sit on an optional shelf a parent turns on, labeled Christian contemporary, separate from Steady Light and separate from the study shelf. It is not the sound of any theme. Air1, their sister network, has the same permission problem and is out until the same kind of letter exists. Themes do not change the music feature.
 
-Recommendation for a later music change, not for this pull request:
+What the closer evidence says for ages 13–17, and what the player now does:
 
-1. Split the screen into “While you study” and “For a break,” in that order. Study shelf: instrumental or very low-lyric, steady, and already on the list where the license allows it (Groove Salad, Space Station, WQXR, Sonic Universe if the owner still wants a game-score option). Break shelf: Beat Blender, Indie Pop, Underground 80s, LISTEN.moe, Cliq Hop. The shelves are a starting layout. A child can still pick a lyric station while studying, because the child studies are mixed and preference matters.
+- During reading, lyrics are the finding with a cost in the samples nearest this age. College students did worse on verbal memory, visual memory, and reading with lyrics (about d = −0.3), and instrumental lo-fi did not show a credible help or harm (Souza and Barbosa, 2023). A self-paced reading study likewise found lyrics to be the distracting part (Vasilev, Hitching, and Tyrrell, *Journal of Cognitive Psychology*, 2023, https://doi.org/10.1080/20445911.2023.2209346). A 2023 meta-analysis of background music and learning found a small overall positive effect (d = 0.314), a small advantage for classical over other genres, and a possible age moderator (de la Mora Velasco, Chen, Hirumi, and Bai, *Psychology of Music*, https://doi.org/10.1177/03057356231153070). That is a reason to keep music available, with classical on the study shelf. It is not a reason to say classical makes a teen smarter. Pietschnig, Voracek, and Formann already failed to find that kind of boost.
+- White and pink noise helped lab tasks a little for youth with ADHD or high ADHD symptoms (g = 0.249) and hurt the comparison groups (g = −0.212) (Nigg, Bruton, Kozlowski, Johnstone, and Karalunas, *Journal of the American Academy of Child & Adolescent Psychiatry*, 2024, https://www.jaacap.org/article/S0890-8567(24)00074-1/abstract). This app does not add a noise track. A default that helps one group and hurts the other is the wrong default.
+- Mindfulness programs are not a quiet line. A meta-analysis of six trials found a GPA difference of about d = 0.42 and called the result preliminary (Ostermann, Pawelkiwitz, and Cramer, *Frontiers in Behavioral Neuroscience*, 2022, https://doi.org/10.3389/fnbeh.2022.961070). Those were training programs, and the authors warn that a spiritual frame may not fit every student. A review of gratitude programs for youth found the interventions, as a group, were generally ineffective (Renshaw and Olinger Steeves, *Psychology in the Schools*, 2016, https://doi.org/10.1002/pits.21903). Steady Light stays a parent-off cosmetic theme and an optional line. The app does not say it raises grades.
+- W3C’s cognitive-accessibility guidance asks for predictable pages, enough contrast, and a way to pause moving or playing media (https://www.w3.org/TR/coga-usable/, https://www.w3.org/WAI/cognitive/). The weekly switch limit, the sensory color override, and the existing stop control are the parts of that guidance this product already follows. Steady Light’s text colors are set to clear WCAG 2.2 AA (4.5:1).
+
+The player change in this pull request:
+
+1. The screen is split into “While you study” and “For a break,” in that order. Study shelf: Groove Salad, Space Station, WQXR, Sonic Universe, then Drone Zone last because a continuous low texture is instrumental but some listeners find it unsettling. Break shelf: Beat Blender, Indie Pop, Underground 80s, LISTEN.moe, Cliq Hop. A teen can still play a lyric station while studying. The headings do not say a shelf is proven to help.
 2. Let the child mark a small set of favorites. The research that exists keeps pointing at self-chosen and familiar music more than at a house genre.
 3. Keep the off control obvious, and keep honoring the sensory sound setting for UI sounds. Add a one-line note that a station can be stopped if it feels like too much. Do not call the player therapy, focus treatment, or ADHD support.
-4. Remove DEF CON Radio. The owner said yes. The stream is electronic music; the brand is a security conference.
+4. DEF CON Radio is removed. The stream was electronic music; the brand is a security conference.
 5. Before adding pop or hip-hop streams, check the station’s terms and whether lyrics are appropriate for ages 13–17. Commercial streams (Spotify, YouTube) bring accounts, recommendations, and ads. The unused playlist types should stay unused. The owner does not want new accounts.
 6. Confirm SomaFM, LISTEN.moe, and WQXR allow in-app playback, and keep the privacy-policy sentence that names those hosts accurate if the list changes. Add K-LOVE only after written permission, on a parent-off shelf whose label says it is Christian contemporary music. Do not use their logo without that same permission. Do not attach that shelf to Steady Light.
 
@@ -428,7 +432,7 @@ Uncertainty to leave in the UI and in release notes: nothing in this catalog is 
 
 - Do not ship Roblox logos, the Roblox wordmark, Roblox characters, catalog item names, or “oof” / badge sounds as theme assets. The blocky theme is original art of blocky people in original worlds. `TUTOR_CONFIG` still contains Roblox reward names and “roblox-oof” sound ids, and those strings are currently unused. Before any theme reads that file, those strings come out of the user-facing path. This plan does not edit the file, so today’s behavior stays.
 - Avatar PNGs stay the current six files for the gamer option. New faces are new files drawn for this app. `PLACEHOLDER.md` is an art spec, not a license for third-party characters.
-- Audience stays teens 13–17. The owner considered 11 and kept 13 as the youngest. Play Console target groups stay Ages 13–15 and Ages 16–17 (https://support.google.com/googleplay/android-developer/answer/9867159). Do not select Ages 5 and under, Ages 6–8, or Ages 9–12. The privacy policy already says the app is for teens 13–17 and is not directed to children under 13. That sentence stays. Theme art and store screenshots have to match it. A blocky builder who reads as a young child, or copy aimed under 13, can make Play treat the declared audience as wrong (https://support.google.com/googleplay/android-developer/answer/9893335). The parent still approves any real-money price. The teen’s screen still shows no dollar amount. The listing can speak to the parent without lowering the age of the app.
+- Audience stays teens 13–17. The owner kept 13 as the youngest, and that is also the best-practice line for this app. Play’s help page says an app for ages 13–15 can support school subjects at that age, and that a listing with youthful animation or young characters can be rejected or pushed into the under-13 Families rules (https://support.google.com/googleplay/android-developer/answer/9867159). The FTC’s COPPA guidance says a service that is directed to children under 13 has to treat visitors as children (https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions). This app is not built for that, so Play target groups stay Ages 13–15 and Ages 16–17. Do not select Ages 5 and under, Ages 6–8, or Ages 9–12. The privacy policy already says teens 13–17 and not under 13. That sentence stays. Theme art, especially the later blocky look, and store screenshots have to read as 13 and up. The parent still approves any real-money price. The teen’s screen still shows no dollar amount.
 - Families monetization rules ban emotionally manipulative in-app purchase offers and require a visible difference between virtual currency and real money. Option A has to use that difference in copy. Option B has to go through Play Billing (https://support.google.com/googleplay/android-developer/answer/9858738) and a parent gate.
 - Data safety and the privacy policy, when the feature ships, need to mention on-device storage of the theme id, switch history, optional spiritual toggle, and (if option A ships) the same token ledger already described. They need a new sentence only if any of that leaves the device. The recommendation is that it does not. Mood and reflection text already stay in `daily_affirmations` on device; new notes should follow that pattern and, unlike today’s affirmation history, should use the same durable store as other preferences so Android clear-storage and export behave predictably. Moving the existing affirmation key is a behavior change and belongs in the implementation phase, with a migration of the old `localStorage` value.
 - This pull request does not edit the privacy policy, the store listing, keystores, or release config.
@@ -445,7 +449,7 @@ Before any implementation phase is called done:
 
 **Visual.** Screenshot the dashboard, shop, wallet, wellness hub, music list, and one Brain Gym game on the gamer theme and compare to the same screens on the build before the theme work. Gamer should match. Positivity is allowed to differ. With the spiritual pack off, Steady Light is absent and the hub has no quiet line. With it on, the hub gains that line and the features on the screen stay the same. Game screens stay as they are until the phase that opts them into tokens.
 
-**Music.** This plan does not change stations. When a later phase does, play and stop one station in each shelf and confirm the sensory sound toggle still mutes UI effects only, unless that phase deliberately wires the two together.
+**Music.** Play and stop one station on each shelf. DEF CON Radio is absent. The sensory sound toggle still mutes UI effects only. The radio does not start by itself.
 
 **Out of scope for snapshots.** Store listing, privacy HTML, and billing, until the phase that changes them.
 
@@ -457,7 +461,7 @@ Before any implementation phase is called done:
 4. **Steady Light.** Parent PIN switch, default off. Cosmetic palette from section 2.6, plus the quiet line. Enabling it does not spend a switch or move an existing save off gamer. No Christian assets and no K-LOVE.
 5. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
 6. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
-7. **Music shelves.** Study shelf and break shelf, remove DEF CON Radio, license check, copy pass. K-LOVE only after written permission, on its own parent-off shelf, not as Steady Light’s sound. No clinical claims. No new accounts.
+7. **Music shelves.** The study shelf, the break shelf, the DEF CON removal, and the copy pass are in this pull request. Still later: written license check for SomaFM, LISTEN.moe, and WQXR, a favorites control, and K-LOVE only after written permission on its own parent-off shelf. No clinical claims. No new accounts. No white-noise track.
 8. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, the privacy policy, and Data safety update in that release. The age line stays teens 13–17, and the Play target groups stay Ages 13–15 and Ages 16–17. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. The listing can address the parent. The child UI shows no dollar price. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
 
 Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
@@ -471,7 +475,7 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 5. **Spiritual pack.** Decided: spiritual, not Christian. Public name Steady Light. Parent switch, default off. Cosmetic theme plus an optional quiet line. No scripture, no named deity, no homework-benefit claim. A Christian pack is not in this version. K-LOVE stays a separate permission problem, not this theme’s soundtrack.
 6. **Blocky art.** Who draws the original blocky companion, and is “blocky builder” an acceptable public name so the UI never says Roblox?
 7. **Clear-storage bypass.** Decided: do not create accounts. Clearing app storage may reset the switch limit. No server record.
-8. **Music.** Decided: yes to the study shelf and the break shelf, and yes to removing DEF CON Radio. Where the studies disagree, keep the choice and do not claim a station is proven to help. K-LOVE is requested. It stays out of the player until Educational Media Foundation gives written permission, and it is not Steady Light’s soundtrack. Pop or hip-hop still waits on a station whose terms allow an in-app stream.
+8. **Music.** Decided and in the player: study shelf first, break shelf second, DEF CON Radio removed. For ages 13–17 the lyric-cost studies are the closer evidence, so the study shelf is the quieter mostly instrumental list, and the teen can still play the other list. K-LOVE stays out until written permission. Pop or hip-hop still waits on a station whose terms allow an in-app stream. Favorites are not built yet.
 9. **Wellness Hub.** Decided: no. A positivity theme does not change features. It changes colors, backgrounds, and other UI chrome. The hub’s lines stay the same feature on every theme.
 10. **Reset App copy.** Decided: yes. Update the confirmation when the switch profile ships so it matches what Reset clears and what it keeps.
 
@@ -489,7 +493,15 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 - Saville, P., Kinney, C., Heiderscheit, A., & Himmerich, H. (2025). Exploring the intersection of ADHD and music: A systematic review. *Behavioral Sciences*. https://doi.org/10.3390/bs15010065
 - Martin-Moratinos, M., Bella-Fernández, M., & Blasco-Fontecilla, H. (2023). Effects of music on attention-deficit/hyperactivity disorder (ADHD) and potential application in serious video games: Systematic review. *Journal of Medical Internet Research*. https://doi.org/10.2196/37742
 - Ke, X., Song, W., Yang, M., Li, J., & Liu, W. (2022). Effectiveness of music therapy in children with autism spectrum disorder: A systematic review and meta-analysis. *Frontiers in Psychiatry*. https://pmc.ncbi.nlm.nih.gov/articles/PMC9582596/
+- Vasilev, M. R., Hitching, L., & Tyrrell, S. (2023). What makes background music distracting? Investigating the role of song lyrics using self-paced reading. *Journal of Cognitive Psychology*. https://doi.org/10.1080/20445911.2023.2209346
+- de la Mora Velasco, E., Chen, Y., Hirumi, A., & Bai, H. (2023). The impact of background music on learners: A systematic review and meta-analysis. *Psychology of Music*. https://doi.org/10.1177/03057356231153070
+- Nigg, J. T., Bruton, A., Kozlowski, M. B., Johnstone, J. M., & Karalunas, S. L. (2024). Do white noise or pink noise help with task performance in youth with attention-deficit/hyperactivity disorder or with elevated attention problems? *Journal of the American Academy of Child & Adolescent Psychiatry*. https://www.jaacap.org/article/S0890-8567(24)00074-1/abstract
+- Ostermann, T., Pawelkiwitz, M., & Cramer, H. (2022). The influence of mindfulness-based interventions on the academic performance of students measured by their GPA. *Frontiers in Behavioral Neuroscience*. https://doi.org/10.3389/fnbeh.2022.961070
+- Renshaw, T. L., & Olinger Steeves, R. M. (2016). What good is gratitude in youth and schools? A systematic review and meta-analysis of correlates and intervention outcomes. *Psychology in the Schools*. https://doi.org/10.1002/pits.21903
+- W3C. Making content usable for people with cognitive and learning disabilities. https://www.w3.org/TR/coga-usable/
+- W3C Web Accessibility Initiative. Cognitive accessibility. https://www.w3.org/WAI/cognitive/
 - K-LOVE terms of use. https://release.klove.com/policies/terms-of-use
+- FTC. Complying with COPPA: Frequently asked questions. https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions
 - Google Play target audience settings. https://support.google.com/googleplay/android-developer/answer/9867159
 - Google Play Families policies. https://support.google.com/googleplay/android-developer/answer/9893335
 - Google Play payments policy. https://support.google.com/googleplay/android-developer/answer/9858738

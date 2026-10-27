@@ -175,6 +175,7 @@ export interface RadioStation {
   description?: string;
   isPlaying?: boolean;
   category?: 'anime' | 'edm' | 'ambient' | 'classical' | 'chill' | 'gaming' | 'variety';
+  shelf: 'study' | 'break';
 }
 
 // Sensory preferences for neurodivergent support
