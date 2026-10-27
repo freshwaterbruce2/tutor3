@@ -1,8 +1,8 @@
 # Adjustable themes plan
 
-This document is the plan and safe groundwork for letting a child pick a companion avatar that brings its own visual theme, while a new positivity theme becomes the default for new installs only. It records how the app works today, the proposed design, music evidence, policy risks, and the checks a later implementation must pass.
+This document records the companion-theme design, the music evidence, and the policy limits. The sections below still describe the app as it was when the plan was written, and then the design that implementation followed.
 
-This pull request adds this document and one music change that the research and the owner’s decisions already settled: the radio is split into “While you study” and “For a break,” and DEF CON Radio is removed. It does not change theme rendering, avatars, onboarding, tokens, rewards, purchases, storage, or store-listing copy.
+This pull request now includes that design for the parts the owner already decided. Empty installs open on positivity. Installs that already have durable data stay on today’s daylight gamer look, with one free first choice that does not use the week. The shop can preview and save a look. One free committed change is allowed each local week starting Monday. Parent Zone, behind the existing PIN, can change the look without using that week. Steady Light stays off until a parent turns it on, and then Mindful Corner adds a quiet line. An extra change costs 50 tokens, with at most two saved. The radio is split into “While you study” and “For a break,” and DEF CON Radio is removed. Blocky art, Play Billing, accounts, K-LOVE, and the privacy policy are unchanged.
 
 Owner decisions recorded on 2026-10-27:
 
@@ -455,16 +455,22 @@ Before any implementation phase is called done:
 
 ## 9. Phased rollout
 
-1. **This pull request.** Plan only.
-2. **Profile and gamer snapshot.** Add the profile type, the migration that writes `gamer` for existing data, and `data-companion-theme=gamer` pointing at the current CSS variables. No new colors, no picker, no spend. Existing and new installs still look the same, because positivity is not applied yet. Tests from section 3.4 that cover migration only.
-3. **Positivity for empty installs.** New colors and backgrounds only. Same features as gamer. Existing profiles stay gamer. Picker can show both themes. Weekly limit and initial-choice rule turn on here. Spiritual pack stays off.
-4. **Steady Light.** Parent PIN switch, default off. Cosmetic palette from section 2.6, plus the quiet line. Enabling it does not spend a switch or move an existing save off gamer. No Christian assets and no K-LOVE.
-5. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
-6. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
-7. **Music shelves.** The study shelf, the break shelf, the DEF CON removal, and the copy pass are in this pull request. Still later: written license check for SomaFM, LISTEN.moe, and WQXR, a favorites control, and K-LOVE only after written permission on its own parent-off shelf. No clinical claims. No new accounts. No white-noise track.
-8. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, the privacy policy, and Data safety update in that release. The age line stays teens 13–17, and the Play target groups stay Ages 13–15 and Ages 16–17. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. The listing can address the parent. The child UI shows no dollar price. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
+Shipped in this pull request:
 
-Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
+1. **Profile and migration.** `theme_profile_v1` is stored apart from the token ledger. Durable installs open on gamer with the free first choice unused. Empty installs open on positivity. `data-companion-theme` is set from that profile. Gamer adds no color overrides, so today’s daylight shell stays. Sensory high contrast, warm, and cool still override the companion colors, and they clear the Steady Light horizon.
+2. **Positivity and the switch limit.** The shop’s Companion look can preview and save Gamer or Positivity. Preview does not write. The first committed choice uses `initial` and does not set `freeSwitchUsed`. The next committed change in the same local week uses the weekly change. A third auto change is blocked and shows the next Monday date. Changing an avatar face counts. Equipping gear does not. Only Focus Gamer suggests a move onto the gamer theme; the other faces leave a new install on positivity.
+3. **Steady Light.** Parent Zone checkbox, default off, behind the existing PIN. Palette and quiet line from section 2.6. Turning the pack on or off does not change the saved theme and does not use a switch. The quiet line is a second sentence on Mindful Corner, and only while the pack is on. No Christian assets and no K-LOVE.
+4. **Token credit.** 50 tokens, cap of 2, pending operation id `theme-switch-credit:{uuid}`, reason `Theme switch credit`. The blocked card says “Use 50 tokens.” A second tap while a change is in flight does not start another spend. No Play Billing.
+5. **Reset copy.** The Reset App confirmation names the token ledger, avatar, companion theme, switch history, and Steady Light switch as kept.
+6. **Music shelves.** Study shelf, break shelf, DEF CON Radio removed.
+
+Not in this pull request:
+
+7. **Blocky theme.** Still rejected in the profile (`unavailable`) until original art exists. No trademark assets.
+8. **Music licenses.** Written checks for SomaFM, LISTEN.moe, and WQXR, a favorites control, and K-LOVE only after written permission. No clinical claims. No white-noise track.
+9. **Parent-gated tutor subscription.** After the owner sets the monthly price and the included reply cap. Play Billing, the privacy policy, and Data safety update in that release. The age line stays teens 13–17, and the Play target groups stay Ages 13–15 and Ages 16–17. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. The child UI shows no dollar price. No accounts and no server-side switch record.
+
+Theme work does not rewrite token history. Earn amounts, shop prices, and reward costs are the same numbers as before this pull request.
 
 ## 10. Open questions for the owner
 
@@ -477,7 +483,7 @@ Each phase after this one gets its own branch and its own check of the ledger. N
 7. **Clear-storage bypass.** Decided: do not create accounts. Clearing app storage may reset the switch limit. No server record.
 8. **Music.** Decided and in the player: study shelf first, break shelf second, DEF CON Radio removed. For ages 13–17 the lyric-cost studies are the closer evidence, so the study shelf is the quieter mostly instrumental list, and the teen can still play the other list. K-LOVE stays out until written permission. Pop or hip-hop still waits on a station whose terms allow an in-app stream. Favorites are not built yet.
 9. **Wellness Hub.** Decided: no. A positivity theme does not change features. It changes colors, backgrounds, and other UI chrome. The hub’s lines stay the same feature on every theme.
-10. **Reset App copy.** Decided: yes. Update the confirmation when the switch profile ships so it matches what Reset clears and what it keeps.
+10. **Reset App copy.** Decided and done. The confirmation matches what Reset clears and what it keeps, including the token ledger, avatar, companion theme, switch history, and Steady Light switch.
 
 ## 11. Sources
 

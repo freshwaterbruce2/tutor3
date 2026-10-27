@@ -63,8 +63,56 @@
   --border-hover: #14B8A6;
 }
 
+/* Companion themes. Sensory color modes below override these. Gamer keeps :root. */
+html[data-companion-theme='positivity'] {
+  --background-main: #FFF7F0;
+  --background-card: #FFFFFF;
+  --background-surface: #FFF1E6;
+  --background-lavender: #FDE7F3;
+  --glass-surface: rgba(255, 255, 255, 0.96);
+  --glass-border: #F3D7C4;
+  --primary-accent: #9A3412;
+  --primary-hover: #7C2D12;
+  --secondary-accent: #0369A1;
+  --tertiary-accent: #9D174D;
+  --border-color: #F3D7C4;
+  --border-subtle: #F8E6D8;
+  --border-hover: #9A3412;
+  --token-color: #9A3412;
+}
+
+html[data-companion-theme='spiritual'] {
+  --background-main: #F3EDE3;
+  --background-card: #FFF9F2;
+  --background-surface: #E7F0EA;
+  --background-lavender: #F3EDE3;
+  --glass-surface: rgba(255, 249, 242, 0.96);
+  --glass-border: #E4D8C8;
+  --primary-accent: #3E5C50;
+  --primary-hover: #314A40;
+  --secondary-accent: #7A5C28;
+  --tertiary-accent: #3E5C50;
+  --text-primary: #2A2622;
+  --text-secondary: #4A433C;
+  --border-color: #E4D8C8;
+  --border-subtle: #EFE6DA;
+  --border-hover: #3E5C50;
+  --token-color: #7A5C28;
+}
+
+html[data-companion-theme='spiritual'] body {
+  background-image: linear-gradient(180deg, #F7F1E4 0%, #F3EDE3 46%, #E7F0EA 100%);
+  background-attachment: fixed;
+}
+
 /* Sensory Color Modes */
-[data-color-mode='high-contrast'] {
+html[data-color-mode='high-contrast'] body,
+html[data-color-mode='warm'] body,
+html[data-color-mode='cool'] body {
+  background-image: none;
+}
+
+html[data-color-mode='high-contrast'] {
   --background-main: #FFFFFF;
   --background-card: #FFFFFF;
   --background-surface: #F3F4F6;
@@ -79,7 +127,7 @@
   --border-color: #1F2937;
 }
 
-[data-color-mode='warm'] {
+html[data-color-mode='warm'] {
   --background-main: #FDF8F3;
   --background-card: #FFFFFF;
   --background-surface: #F9EFE6;
@@ -88,7 +136,7 @@
   --secondary-accent: #B45309;
 }
 
-[data-color-mode='cool'] {
+html[data-color-mode='cool'] {
   --background-main: #F3F8FA;
   --background-card: #FFFFFF;
   --background-surface: #E6F2F7;

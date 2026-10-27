@@ -6,6 +6,7 @@ import {
   Heart,
   Lock,
   MessageSquare,
+  Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -16,6 +17,7 @@ import SecurePinLock from '../core/SecurePinLock';
 import DataManagement from '../settings/DataManagement';
 import RewardSettings from '../settings/RewardSettings';
 import ScreenTimeSettings from '../settings/ScreenTimeSettings';
+import { CompanionParentControls } from './CompanionParentControls';
 import ChatAnalytics from './ChatAnalytics';
 import ProgressReports from './ProgressReports';
 
@@ -166,6 +168,14 @@ const ParentDashboard = ({
           accent="bg-gradient-to-br from-orange-500 to-amber-500"
         >
           <ScreenTimeSettings />
+        </DashboardSection>
+
+        <DashboardSection
+          icon={Sparkles}
+          title="Companion look"
+          accent="bg-gradient-to-br from-teal-600 to-amber-700"
+        >
+          <CompanionParentControls />
         </DashboardSection>
 
         <DashboardSection
