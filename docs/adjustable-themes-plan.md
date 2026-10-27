@@ -417,7 +417,7 @@ Before any implementation phase is called done:
 3. **Positivity for empty installs.** New colors and backgrounds only. Same features as gamer. Existing profiles stay gamer. Picker can show both themes. Weekly limit and initial-choice rule turn on here.
 4. **Token credit.** 50 tokens, cap of 2, pending-intent flow. Still no Play Billing.
 5. **Blocky theme.** Only after original art exists. Map the new avatar. No trademark assets.
-6. **Music shelves.** Relabel and regroup stations, license check, copy pass. No clinical claims.
+6. **Music shelves.** Study shelf and break shelf, remove DEF CON Radio, license check, copy pass. K-LOVE only after written permission. No clinical claims. No new accounts.
 7. **Parent-gated tutor subscription.** Its own release, after the owner sets the monthly price and the included reply cap. Play Billing, privacy policy, and Data safety update in that release. Existing installs keep today’s 30/day and 200/month allowance until that release says otherwise. Optional IAP for extra switches only if the owner rejects tokens as the only extra-switch payment. No accounts and no server-side switch record.
 
 Each phase after this one gets its own branch and its own check of the ledger. None of them rewrite token history.
