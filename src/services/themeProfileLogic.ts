@@ -114,6 +114,13 @@ export function visibleProfile(profile: ThemeProfile, now: Date): ThemeProfile {
   return alignWeek(profile, now);
 }
 
+export function faceChangeMode(profile: ThemeProfile, now: Date): 'auto' | 'credit' | 'blocked' {
+  const availability = switchAvailability(profile, now);
+  if (availability === 'initial' || availability === 'weekly') return 'auto';
+  if (availability === 'credit') return 'credit';
+  return 'blocked';
+}
+
 export function switchAvailability(profile: ThemeProfile, now: Date): 'initial' | 'weekly' | 'credit' | 'blocked' {
   const current = alignWeek(profile, now);
   if (current.freeSelectionAvailable) return 'initial';
@@ -199,7 +206,8 @@ export function commitCompanion(
     };
   }
 
-  if (mode === 'credit' && current.purchasedCredits > 0) {
+  // 'auto' is the child path: a saved credit is used once the free change is gone.
+  if ((mode === 'credit' || mode === 'auto') && current.purchasedCredits > 0) {
     return {
       ok: true,
       via: 'credit',

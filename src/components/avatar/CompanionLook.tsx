@@ -4,7 +4,8 @@ import {
   commitSavedCompanion,
   getThemeSnapshot,
   loadThemeProfile,
-  purchaseSwitchCredit,
+  purchaseSwitchCreditUnlessUnchanged,
+  restoreSavedCompanionTheme,
   stageParentRequest,
   statusSentence,
   subscribeThemeProfile,
@@ -50,19 +51,21 @@ export function CompanionLook({ avatarId, userTokens, onAskParent, onAvatarCommi
     return () => {
       cancelled = true;
       unsubscribe();
+      restoreSavedCompanionTheme();
     };
   }, []);
 
   if (!profile) return null;
 
   const shownId = previewId ?? profile.activeThemeId;
+  const lookWouldChange = shownId !== profile.activeThemeId;
   const looks = LOOKS.filter((look) => !look.needsPack || profile.spiritualPackEnabled);
   const availability = switchAvailability(profile, new Date());
   const sentence = statusSentence(profile, new Date());
 
   const restore = () => {
     setPreviewId(null);
-    applyCompanionTheme(profile.activeThemeId);
+    restoreSavedCompanionTheme();
   };
 
   const saveLook = async (mode: 'auto' | 'credit') => {
@@ -112,7 +115,12 @@ export function CompanionLook({ avatarId, userTokens, onAskParent, onAvatarCommi
     setBusy(true);
     setMessage(null);
     try {
-      const purchased = await purchaseSwitchCredit();
+      const purchased = await purchaseSwitchCreditUnlessUnchanged(shownId, avatarId);
+      if (purchased === 'unchanged') {
+        setMessage('This look is already saved.');
+        restore();
+        return;
+      }
       if (purchased === 'short') {
         setMessage(`You have ${userTokens} tokens. An extra change is ${THEME_SWITCH_CREDIT_COST} tokens. Waiting still works.`);
         return;
@@ -180,9 +188,11 @@ export function CompanionLook({ avatarId, userTokens, onAskParent, onAvatarCommi
           >
             Ask a parent
           </button>
-          <button type="button" className="rounded-xl border border-[var(--border-color)] px-3 py-3 text-sm" onClick={() => void useTokens()} disabled={busy}>
-            Use {THEME_SWITCH_CREDIT_COST} tokens
-          </button>
+          {lookWouldChange && (
+            <button type="button" className="rounded-xl border border-[var(--border-color)] px-3 py-3 text-sm" onClick={() => void useTokens()} disabled={busy}>
+              Use {THEME_SWITCH_CREDIT_COST} tokens
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">

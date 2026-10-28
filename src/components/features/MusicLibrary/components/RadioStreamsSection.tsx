@@ -38,10 +38,10 @@ export function RadioStreamsSection({
         return (
           <section key={shelf.id} aria-labelledby={`radio-shelf-${shelf.id}`} className="space-y-2">
             <div className="px-1">
-              <h2 id={`radio-shelf-${shelf.id}`} className="text-base font-semibold text-white">
+              <h2 id={`radio-shelf-${shelf.id}`} className="text-base font-semibold text-[var(--text-primary)]">
                 {shelf.title}
               </h2>
-              <p className="text-xs text-gray-400 mt-1">{shelf.note}</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">{shelf.note}</p>
             </div>
             {stations.map((station) => (
               <StationRow
@@ -81,8 +81,8 @@ function StationRow({
     <button
       className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all active:scale-[0.98] ${
         isActive
-          ? 'bg-blue-500/15 border border-blue-500/40'
-          : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/15'
+          ? 'bg-[var(--background-surface)] border border-[var(--primary-accent)]'
+          : 'bg-[var(--background-card)] border border-[var(--border-color)]'
       }`}
       onClick={() => {
         if (isActive) {
@@ -95,7 +95,7 @@ function StationRow({
     >
       <div
         className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-          isActive ? 'bg-blue-500 text-white' : 'bg-white/10 text-gray-400'
+          isActive ? 'bg-[var(--primary-accent)] text-white' : 'bg-[var(--background-surface)] text-[var(--text-secondary)]'
         }`}
       >
         {isActive ? (
@@ -119,15 +119,15 @@ function StationRow({
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className={`font-medium text-sm truncate ${isActive ? 'text-blue-300' : 'text-white'}`}>
+        <div className="font-medium text-sm truncate text-[var(--text-primary)]">
           {station.name}
         </div>
-        <div className="text-xs text-gray-500 truncate">{station.genre}</div>
+        <div className="text-xs text-[var(--text-secondary)] truncate">{station.genre}</div>
       </div>
 
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-          isActive ? 'text-blue-400' : 'text-gray-500'
+          isActive ? 'text-[var(--primary-accent)]' : 'text-[var(--text-secondary)]'
         }`}
       >
         {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}

@@ -2,7 +2,7 @@
 
 This document records the companion-theme design, the music evidence, and the policy limits. The sections below still describe the app as it was when the plan was written, and then the design that implementation followed.
 
-This pull request now includes that design for the parts the owner already decided. Empty installs open on positivity. Installs that already have durable data stay on today’s daylight gamer look, with one free first choice that does not use the week. The shop can preview and save a look. One free committed change is allowed each local week starting Monday. Parent Zone, behind the existing PIN, can change the look without using that week. Steady Light stays off until a parent turns it on, and then Mindful Corner adds a quiet line. An extra change costs 50 tokens, with at most two saved. The radio is split into “While you study” and “For a break,” and DEF CON Radio is removed. Blocky art, Play Billing, accounts, K-LOVE, and the privacy policy are unchanged.
+This pull request now includes that design for the parts the owner already decided. Empty installs open on positivity. Installs that already have durable data stay on today’s daylight gamer look, with one free first choice that does not use the week. The shop can preview and save a look. One free committed change is allowed each local week starting Monday. Parent Zone, behind the existing PIN, can change the look without using that week. Steady Light stays off until a parent turns it on, and then Mindful Corner adds a quiet line. An extra change costs 50 tokens, with at most two saved. The radio is split into “While you study” and “For a break,” and DEF CON Radio is removed. Blocky art, Play Billing, accounts, and K-LOVE are unchanged. The in-app privacy policy now says the companion look stays on the device and is included in a Data Management export. The website privacy page and the Play Data safety form still need a matching check by the owner.
 
 Owner decisions recorded on 2026-10-27:
 
@@ -261,7 +261,7 @@ Parent override remains the supported way past the limit. A purchased credit is 
 
 ### 3.4 Tests to add when the feature is built
 
-There is no unit-test runner in `package.json` today (`lint` is `tsc --noEmit`). The implementation phase should add a small test file around pure functions for the profile, with storage mocked. Cases:
+`npm test` runs the theme logic tests, the storage tests, and the gateway integration script. `lint` remains `tsc --noEmit`. Cases:
 
 - Missing profile plus existing avatar or ledger migrates to `gamer` with `freeSelectionAvailable` true, `spiritualPackEnabled` false, and does not write the token ledger.
 - Empty storage creates positivity and does not write a gamer profile.

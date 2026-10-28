@@ -1,6 +1,6 @@
 {
   "title": "Vibe Tutor Privacy Policy",
-  "effectiveDate": "2026-09-27",
+  "effectiveDate": "2026-10-28",
   "contact": "freshwaterbruce2@gmail.com",
   "sections": [
     {
@@ -18,13 +18,14 @@
     {
       "heading": "Data stored on your device",
       "paragraphs": [
-        "Most data stays in app storage or a local SQLite database: an optional display name, homework and assignments, schedules and study progress, rewards and achievements, preferences and Parent Zone PIN settings, Tutor and Buddy chat history, learning statistics, and a random installation identifier. Learning statistics are not sent to us. Data Management offers Export Data and Import Data for files you choose to create; do not treat them as a guaranteed backup or restore service."
+        "Most data stays in app storage or a local SQLite database: an optional display name, homework and assignments, schedules and study progress, rewards and achievements, preferences and Parent Zone PIN settings, Tutor and Buddy chat history, learning statistics, and a random installation identifier. Learning statistics are not sent to us. Data Management offers Export Data and Import Data for files you choose to create; do not treat them as a guaranteed backup or restore service.",
+        "The companion look stays on this device: the theme id, the list of look changes, whether Steady Light is on, and the operation ids for theme-switch credits. That record is included in the Data Management export file. It is not sent to the tutor server or any other network service."
       ]
     },
     {
       "heading": "Data that leaves your device",
       "paragraphs": [
-        "The app uses HTTPS and blocks unencrypted HTTP. App verification sends a random installation identifier and a Google Play Integrity token to our backend. The server retains only a one-way keyed hash of the identifier and issues a short-lived session token. When you use AI, messages and recent context plus the assignment, homework, progress, or schedule details needed for that feature leave the device. Optional reports send a category and include message text only when you choose to attach it. The backend performs automated content-safety checks and may send hard-to-classify messages for separate automated safety review. Optional radio and web font requests go directly to their hosts."
+        "The app uses HTTPS and blocks unencrypted HTTP. App verification sends a random installation identifier and a Google Play Integrity token to our backend. The server retains only a one-way keyed hash of the identifier and issues a short-lived session token. When you use AI, messages and recent context plus the assignment, homework, progress, or schedule details needed for that feature leave the device. Optional reports send a category and include message text only when you choose to attach it. The backend performs automated content-safety checks and may send hard-to-classify messages for separate automated safety review. Optional radio and web font requests go directly to their hosts. The companion look, its change history, the Steady Light switch, and theme-switch credit operation ids do not leave the device."
       ]
     },
     {
@@ -60,7 +61,7 @@
     {
       "heading": "Deleting your data",
       "paragraphs": [
-        "Uninstall Vibe Tutor or use Android Settings > Apps > Vibe Tutor > Storage > Clear storage to remove all local data, including chat history, schedules, learning statistics, and installation identifier. In the app, Parent Dashboard > Data Management > Reset App clears homework, achievements, points, rewards, and sensory settings. It does not clear chat history, schedules, learning statistics, or the installation identifier. In Data Management, ‘Delete my server data’ requests deletion of server reports, pending AI request records, and usage counters that the service can identify for this installation. Older usage counters, platform logs, backups, and provider records may remain. This does not erase data stored on your device or immediately revoke an existing session. If deletion cannot be confirmed, the app asks you to try again later."
+        "Uninstall Vibe Tutor or use Android Settings > Apps > Vibe Tutor > Storage > Clear storage to remove all local data, including chat history, schedules, learning statistics, and installation identifier. In the app, Parent Dashboard > Data Management > Reset App clears homework, achievements, points, rewards, and sensory settings. It does not clear chat history, schedules, learning statistics, the installation identifier, or the companion look stored on this device. In Data Management, ‘Delete my server data’ requests deletion of server reports, pending AI request records, and usage counters that the service can identify for this installation. Older usage counters, platform logs, backups, and provider records may remain. This does not erase data stored on your device or immediately revoke an existing session. If deletion cannot be confirmed, the app asks you to try again later."
       ]
     },
     {

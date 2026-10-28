@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AvatarItemType, AvatarState, ShopItem } from '@vibetech/avatars';
 import { dataStore } from '../../services/dataStore';
-import { commitSavedCompanion, statusSentence, suggestedThemeForAvatar, loadThemeProfile } from '../../services/themeProfile';
+import { commitFaceAndTheme, faceChangeMode, statusSentence, suggestedThemeForAvatar, loadThemeProfile } from '../../services/themeProfile';
 import { DEFAULT_UNLOCKED_AVATAR_IDS, SHOP_ITEMS, normalizeAvatarId } from '../../services/avatarShopData';
 import { logger } from '../../utils/logger';
 
@@ -78,18 +78,27 @@ export function useAvatarShop({ userTokens, onSpendTokens, onPurchaseComplete }:
       const previousAvatarId = state.selectedAvatarId;
       if (slot === 'selectedAvatarId' && previousAvatarId && item.id !== previousAvatarId) {
         const profile = await loadThemeProfile();
+        const mode = faceChangeMode(profile, new Date());
+        if (mode === 'blocked') {
+          setActionError(`${statusSentence(profile, new Date())} Gear stays free.`);
+          return;
+        }
         const suggested = suggestedThemeForAvatar(item.id);
-        const result = await commitSavedCompanion({
+        const result = await commitFaceAndTheme({
           themeId: suggested ?? profile.activeThemeId,
           fromAvatarId: previousAvatarId,
           toAvatarId: item.id,
-          mode: 'auto',
+          mode,
+          saveFace: () => dataStore.saveAvatarState(next),
+          restoreFace: () => dataStore.saveAvatarState(state),
         });
         if (!result.ok && result.reason !== 'unchanged') {
           const latest = await loadThemeProfile();
           setActionError(`${statusSentence(latest, new Date())} Gear stays free.`);
           return;
         }
+        setAvatarState(next);
+        return;
       }
       await dataStore.saveAvatarState(next);
       setAvatarState(next);

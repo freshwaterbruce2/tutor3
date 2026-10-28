@@ -30,7 +30,7 @@ import {
 } from './services/gameProgression';
 import { useTokenEconomy } from './hooks/useTokenEconomy';
 import { initializeTokenLedger } from './services/tokenService';
-import { commitSavedCompanion, ensureThemeProfile, existingInstallSignals, suggestedThemeForAvatar, loadThemeProfile } from './services/themeProfile';
+import { ensureThemeProfile, existingInstallSignals, saveOnboardingCompanion } from './services/themeProfile';
 import {
   getRecoverableCompletionDeliveries,
   markCompletionDeliveryLegSettled,
@@ -48,7 +48,7 @@ import {
 } from './utils/electronStore';
 import { TokenEarnAnimation } from './components/features/TokenEarnAnimation';
 import { WELCOME_TOKENS, type OnboardingResult } from './components/core/FirstRunOnboarding';
-import { DEFAULT_UNLOCKED_AVATAR_IDS, normalizeAvatarId } from './services/avatarShopData';
+import { normalizeAvatarId } from './services/avatarShopData';
 
 const CHECKLIST_BONUS_TOKENS = 50;
 const ACTIVE_WORK_STORAGE_KEY = 'vibetutor_active_work_v2';
@@ -193,11 +193,6 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
         try {
           const selectedAvatarId = normalizeAvatarId(data.avatar);
           const existingAvatarState = await dataStore.getAvatarState();
-          const unlockedAvatars = new Set([
-            ...DEFAULT_UNLOCKED_AVATAR_IDS,
-            ...(existingAvatarState?.unlockedAvatars ?? []),
-            selectedAvatarId,
-          ]);
 
           await dataStore.saveUserSettings('user_type', data.userType);
           if (data.name.trim()) {
@@ -205,15 +200,9 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
             await dataStore.saveUserSettings('user_name', trimmedName);
             setUserName(trimmedName);
           }
-          await dataStore.saveAvatarState({
-            equippedItems: existingAvatarState?.equippedItems ?? {},
-            ownedItems: existingAvatarState?.ownedItems ?? [],
-            purchaseHistory: existingAvatarState?.purchaseHistory ?? [],
-            ...(existingAvatarState?.pendingPurchase
-              ? { pendingPurchase: existingAvatarState.pendingPurchase }
-              : {}),
+          const companion = await saveOnboardingCompanion({
             selectedAvatarId,
-            unlockedAvatars: [...unlockedAvatars],
+            existing: existingAvatarState,
           });
           const awarded = await handleEarnTokens(
             WELCOME_TOKENS,
@@ -222,20 +211,10 @@ const StatefulApp = ({ startup }: { startup: StartupData }) => {
           );
           if (!awarded) throw new Error('Welcome award could not be saved');
           await dataStore.saveUserSettings('onboarding_completed', 'true');
-          const themeProfile = await loadThemeProfile();
-          if (themeProfile.freeSelectionAvailable) {
-            const suggested = suggestedThemeForAvatar(selectedAvatarId);
-            await commitSavedCompanion({
-              themeId: suggested ?? themeProfile.activeThemeId,
-              fromAvatarId: existingAvatarState?.selectedAvatarId ?? selectedAvatarId,
-              toAvatarId: selectedAvatarId,
-              mode: 'auto',
-            });
-          }
           setOnboardingFlags((prev) => ({
             ...prev,
             hasCompletedFirstRun: true,
-            userAvatar: selectedAvatarId,
+            userAvatar: companion.avatarId,
           }));
           setOnboardingFailure(false);
           setIsCompletingOnboarding(false);

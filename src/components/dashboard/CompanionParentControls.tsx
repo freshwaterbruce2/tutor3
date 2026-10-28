@@ -3,8 +3,8 @@ import { normalizeAvatarId } from '../../services/avatarShopData';
 import { dataStore } from '../../services/dataStore';
 import {
   clearParentRequest,
-  commitSavedCompanion,
   enableSpiritualPack,
+  saveParentCompanion,
   getThemeSnapshot,
   loadThemeProfile,
   readParentRequest,
@@ -58,12 +58,7 @@ export function CompanionParentControls() {
         setMessage('Turn on Steady Light first. That switch does not change the companion.');
         return;
       }
-      const result = await commitSavedCompanion({
-        themeId,
-        fromAvatarId: avatarId,
-        toAvatarId: avatarId,
-        mode: 'parent',
-      });
+      const result = await saveParentCompanion({ themeId, toAvatarId: avatarId });
       clearParentRequest();
       setMessage(result.ok ? 'A parent changed the companion. This did not use the weekly change.' : 'That look is already saved.');
     } catch {

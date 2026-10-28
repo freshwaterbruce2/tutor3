@@ -114,7 +114,35 @@ if (staged.ok) {
   assert.equal(granted.pendingCredit, null);
   const retried = grantSwitchCredit(granted, 'theme-switch-credit:one');
   assert.equal(retried.purchasedCredits, 1);
-  const used = commitCompanion(
+  const autoCredit = commitCompanion(
+    { ...granted, freeSelectionAvailable: false, freeSwitchUsed: true, purchasedCredits: 1 },
+    change(granted, 'gamer', tuesday),
+    'auto',
+  );
+assert.equal(autoCredit.ok, true);
+if (autoCredit.ok) {
+  assert.equal(autoCredit.via, 'credit');
+  assert.equal(autoCredit.profile.purchasedCredits, 0);
+  assert.equal(autoCredit.profile.freeSwitchUsed, true);
+}
+
+const preferWeekly = commitCompanion(
+  { ...granted, freeSelectionAvailable: false, freeSwitchUsed: false, purchasedCredits: 1, weekStart: localMonday(tuesday) },
+  {
+    themeId: 'gamer',
+    fromAvatarId: 'avatar-ai-buddy',
+    toAvatarId: 'avatar-girl-glasses',
+    at: tuesday.getTime(),
+  },
+  'auto',
+);
+assert.equal(preferWeekly.ok, true);
+if (preferWeekly.ok) {
+  assert.equal(preferWeekly.via, 'weekly');
+  assert.equal(preferWeekly.profile.purchasedCredits, 1);
+}
+
+const used = commitCompanion(
     { ...granted, freeSelectionAvailable: false, freeSwitchUsed: true },
     change(granted, 'gamer', tuesday),
     'credit',

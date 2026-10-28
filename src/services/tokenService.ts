@@ -63,9 +63,41 @@ function publish(): void {
     try { listener(); } catch { /* isolated */ }
   }
 }
+const LEGACY_TOKEN_KEYS = [
+  'vibetutor_token_state_v2',
+  'vibetutor_token_transactions_v2',
+  'vibetutor_tokens',
+  'userTokens',
+  'user_tokens',
+] as const;
+
+function legacyTokenValuePresent(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+}
+
+/** True when a current or pre-v3 token record is already stored. Does not migrate or rewrite it. */
 export async function tokenLedgerExists(): Promise<boolean> {
   const raw = await readCanonical();
-  return raw.trim().length > 0;
+  if (raw.trim().length > 0) return true;
+  for (const key of LEGACY_TOKEN_KEYS) {
+    try {
+      if (legacyTokenValuePresent(appStore.getStrict<unknown>(key))) return true;
+    } catch {
+      // A missing bridge is not a ledger.
+    }
+  }
+  if (Capacitor.getPlatform() === 'android') {
+    for (const key of ['vibetutor_tokens', 'userTokens', 'user_tokens'] as const) {
+      try {
+        if ((await dataStore.getUserSettings(key)).trim().length > 0) return true;
+      } catch {
+        // Ignore a settings read that cannot prove an older install.
+      }
+    }
+  }
+  return false;
 }
 export async function initializeTokenLedger(): Promise<void> { if (ledger) return; if (initialization) return initialization; initialization = (async () => { const raw = await readCanonical(); if (raw) { let decoded: unknown; try { decoded = JSON.parse(raw); } catch { throw new Error('Token ledger is malformed'); } const parsed = parseLedger(decoded); if (!parsed) throw new Error('Token ledger is malformed'); if (!Array.isArray((decoded as Record<string, unknown>).operationFingerprints)) await persist(parsed); ledger = parsed; return; } const v2State = appStore.getStrict<unknown>('vibetutor_token_state_v2'); const v2Transactions = appStore.getStrict<unknown>('vibetutor_token_transactions_v2'); if (v2State !== null || v2Transactions !== null) { const migrated = parseV2(v2State, v2Transactions); if (!migrated) throw new Error('Legacy token ledger is malformed'); await persist(migrated); ledger = migrated; return; } const legacyValues: unknown[] = [appStore.getStrict<unknown>('vibetutor_tokens'), appStore.getStrict<unknown>('userTokens'), appStore.getStrict<unknown>('user_tokens')]; if (Capacitor.getPlatform() === 'android') legacyValues.push(await dataStore.getUserSettings('userTokens'), await dataStore.getUserSettings('user_tokens')); const balance = Math.max(0, ...legacyValues.map(legacyNumber).filter((value): value is number => value !== null)); const next = emptyLedger(); next.balance = balance; next.totalEarned = balance; await persist(next); ledger = next; })().finally(() => { initialization = null; }); return initialization; }
 async function mutate(type: 'earn' | 'spend', amount: number, reason: string, operationId: string): Promise<TokenMutationResult> { const normalizedAmount = integer(amount, true), safeReason = text(reason, MAX_REASON_LENGTH), safeOperationId = text(operationId, MAX_OPERATION_ID_LENGTH); if (!normalizedAmount || !safeReason || !safeOperationId) return { ok: false, reason: 'invalid_amount', balance: snapshot() }; try { await initializeTokenLedger(); } catch { return { ok: false, reason: 'not_initialized', balance: snapshot() }; } let result: TokenMutationResult = { ok: false, reason: 'persistence_failed', balance: snapshot() }; const work = mutationQueue.then(async () => { if (!ledger) { result = { ok: false, reason: 'not_initialized', balance: snapshot() }; return; } const existing = ledger.transactions.find((transaction) => transaction.id === safeOperationId); if (ledger.appliedOperationIds.includes(safeOperationId)) { const known = ledger.operationFingerprints.find((entry) => entry.id === safeOperationId); if (!known || known.type !== type || known.amount !== normalizedAmount || known.reason !== safeReason) { result = { ok: false, reason: 'invalid_amount', balance: snapshot() }; return; } result = { ok: true, transaction: existing ?? null, balance: snapshot(), duplicate: true }; return; } if (type === 'spend' && ledger.balance < normalizedAmount) { result = { ok: false, reason: 'insufficient_funds', balance: snapshot() }; return; } const now = Date.now(), transaction: TokenTransaction = { id: safeOperationId, type, amount: normalizedAmount, reason: safeReason, relatedId: safeOperationId, timestamp: now }; const nextBalance = ledger.balance + (type === 'earn' ? normalizedAmount : -normalizedAmount), nextEarned = ledger.totalEarned + (type === 'earn' ? normalizedAmount : 0), nextSpent = ledger.totalSpent + (type === 'spend' ? normalizedAmount : 0); if (!Number.isSafeInteger(nextBalance) || !Number.isSafeInteger(nextEarned) || !Number.isSafeInteger(nextSpent)) { result = { ok: false, reason: 'invalid_amount', balance: snapshot() }; return; } const next: TokenLedger = { ...ledger, balance: nextBalance, totalEarned: nextEarned, totalSpent: nextSpent, updatedAt: now, transactions: [...ledger.transactions, transaction].slice(-MAX_TRANSACTIONS), appliedOperationIds: [...ledger.appliedOperationIds, safeOperationId].slice(-MAX_OPERATION_IDS), operationFingerprints: [...ledger.operationFingerprints, fingerprint(transaction)].slice(-MAX_OPERATION_IDS) }; try { await persist(next); } catch { result = { ok: false, reason: 'persistence_failed', balance: snapshot() }; return; } ledger = next; result = { ok: true, transaction, balance: snapshot(), duplicate: false }; publish(); }); mutationQueue = work.catch(() => undefined); await work; return result; }
